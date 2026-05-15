@@ -4,6 +4,7 @@ import { processMessage } from "../services/whatsapp-message.js";
 import { analisarImagem } from "../services/ai.js";
 import { transcribeAudio } from "../services/transcription.js";
 import { getSession } from "../services/session.js";
+import { isEcho } from "../services/sent-tracker.js";
 import config from "../config.js";
 
 const router = Router();
@@ -78,9 +79,15 @@ router.post("/webhook", async (req, res) => {
 
     const rawText = body.text?.message || body.caption || "";
 
-    // 6. Bloqueia echo do bot (Z-API trial reenvia mensagens enviadas como ReceivedCallback)
+    // 6. Bloqueia echo do bot — verifica por messageId E por conteúdo
+    if (isEcho(msgId, rawText)) {
+      console.log(`🚫 Echo do bot bloqueado | id:${msgId} | "${rawText.slice(0, 50)}"`);
+      return;
+    }
+
+    // 6b. Fallback: watermark do Z-API trial no texto
     if (isBotEcho(rawText)) {
-      console.log(`🚫 Echo do bot ignorado (watermark Z-API): "${rawText.slice(0, 60)}"`);
+      console.log(`🚫 Echo por watermark bloqueado: "${rawText.slice(0, 50)}"`);
       return;
     }
 

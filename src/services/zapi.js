@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import config from "../config.js";
+import { trackSent } from "./sent-tracker.js";
 
 const ZAPI_BASE = `https://api.z-api.io/instances/${config.zapiInstance}/token/${config.zapiToken}`;
 
@@ -13,11 +14,18 @@ export async function sendZApiMessage(phone, message) {
       },
       body: JSON.stringify({ phone, message }),
     });
+
     if (!response.ok) {
       console.error("Erro Z-API envio:", await response.text());
-    } else {
-      console.log(`✅ Mensagem enviada para ${phone}`);
+      return;
     }
+
+    // Registra o ID e o conteúdo da mensagem para filtrar echos
+    const data = await response.json().catch(() => ({}));
+    const sentId = data.messageId || data.zaapId || data.id;
+    trackSent(sentId, message);
+
+    console.log(`✅ Mensagem enviada para ${phone}${sentId ? ` (id: ${sentId})` : ""}`);
   } catch (e) {
     console.error("Erro ao enviar Z-API:", e.message);
   }
