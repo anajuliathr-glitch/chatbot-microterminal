@@ -11,7 +11,10 @@ async function sendZApiMessage(phone, message) {
   try {
     const response = await fetch(`${ZAPI_BASE}/send-text`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Client-Token": config.zapiClientToken,
+      },
       body: JSON.stringify({ phone, message }),
     });
     if (!response.ok) {

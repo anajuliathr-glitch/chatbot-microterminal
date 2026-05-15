@@ -11,4 +11,5 @@ export default {
   whatsappSessionPath: process.env.WHATSAPP_SESSION_PATH || "./whatsapp-session",
   zapiInstance: process.env.ZAPI_INSTANCE || "",
   zapiToken: process.env.ZAPI_TOKEN || "",
+  zapiClientToken: process.env.ZAPI_CLIENT_TOKEN || "",
 };
