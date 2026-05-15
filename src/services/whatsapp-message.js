@@ -23,6 +23,17 @@ export async function processMessage(message, chatId, from) {
 
   const msg = message.toLowerCase().trim();
 
+  // Iniciador silencioso — usado quando áudio falha em usuário novo
+  if (msg === "__init__") {
+    if (session.step === "start") {
+      session.step = "ask_name";
+      session.lastInteraction = now;
+      saveSession(chatId, session);
+      return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
+    }
+    return null; // Sessão já existe, não faz nada
+  }
+
   // Comandos globais
   if (msg === "reset") {
     deleteSession(chatId);
@@ -34,14 +45,13 @@ export async function processMessage(message, chatId, from) {
     return "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍";
   }
 
-  // Se a sessão foi perdida mas o usuário continua falando sobre o problema
-  // (detecta contexto para não perguntar o nome de novo)
+  // Se a sessão foi perdida mas o usuário já está falando sobre um problema
   if (isNew && looksLikeProblem(msg)) {
     session.step = "ask_name_then_problem";
     session.pendingProblem = message;
     session.lastInteraction = now;
     saveSession(chatId, session);
-    return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
+    return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nEntendi que você está com um problema — me diz seu nome e já te ajudo! 👍`;
   }
 
   let reply = "";

@@ -3,17 +3,17 @@ import { sendZApiMessage } from "../services/zapi.js";
 import { processMessage } from "../services/whatsapp-message.js";
 import { analisarImagem } from "../services/ai.js";
 import { transcribeAudio } from "../services/transcription.js";
+import { getSession } from "../services/session.js";
 import config from "../config.js";
 
 const router = Router();
 
-// Deduplicação: armazena IDs de mensagens já processadas (últimos 2 min)
+// Deduplicação: evita processar o mesmo webhook duas vezes
 const processedMessages = new Map();
 function isDuplicate(msgId) {
   if (!msgId) return false;
   if (processedMessages.has(msgId)) return true;
   processedMessages.set(msgId, Date.now());
-  // Limpa entradas antigas a cada chamada
   const cutoff = Date.now() - 120_000;
   for (const [id, ts] of processedMessages) {
     if (ts < cutoff) processedMessages.delete(id);
@@ -22,82 +22,92 @@ function isDuplicate(msgId) {
 }
 
 router.post("/webhook", async (req, res) => {
-  // Responde imediatamente para o Z-API não dar timeout
   res.status(200).json({ ok: true });
 
   try {
     const body = req.body;
 
     // Ignora mensagens enviadas pelo próprio bot
-    if (body.fromMe) return;
+    if (body.fromMe === true) return;
 
     // Aceita só mensagens recebidas
     if (body.type !== "ReceivedCallback") return;
 
-    // Normaliza o número — remove @c.us, @s.whatsapp.net, etc.
+    // Normaliza número — remove @c.us, @s.whatsapp.net etc.
     const phone = String(body.phone || "").replace(/@.*$/, "").trim();
     if (!phone) return;
 
+    // Ignora grupos (número contém "-")
+    if (phone.includes("-")) return;
+
     // Deduplicação por messageId
-    const msgId = body.messageId || body.id;
+    const msgId = body.messageId || body.id || body.zaapId;
     if (isDuplicate(msgId)) {
-      console.log(`⚠️ Webhook duplicado ignorado: ${msgId}`);
+      console.log(`⚠️ Duplicado ignorado: ${msgId}`);
       return;
     }
 
-    console.log(`📥 Webhook | fromMe:${body.fromMe} tipo:${body.type} phone:${phone} msgId:${msgId} hasAudio:${!!body.audio} hasImage:${!!body.image} text:"${(body.text?.message || body.caption || "").slice(0, 60)}"`);
+    const chatId = `zapi_${phone}`;
 
+    console.log(`📥 phone:${phone} fromMe:${body.fromMe} tipo:${body.type} audio:${!!body.audio} img:${!!body.image} text:"${(body.text?.message || "").slice(0,50)}"`);
 
-    // Mensagem de imagem
+    // ── IMAGEM ──────────────────────────────────────────────
     if (body.image?.imageUrl) {
       try {
         const { default: fetch } = await import("node-fetch");
-        const imageResponse = await fetch(body.image.imageUrl);
-        const arrayBuffer = await imageResponse.arrayBuffer();
-        const mimeType = body.image.mimeType || "image/jpeg";
-        const base64 = `data:${mimeType};base64,${Buffer.from(arrayBuffer).toString("base64")}`;
-        const reply = await analisarImagem(base64);
-        await sendZApiMessage(phone, reply || "Recebi sua imagem 📸\n\nPode descrever o que está acontecendo? Assim consigo te ajudar melhor 😊");
+        const imgRes = await fetch(body.image.imageUrl);
+        const buf   = await imgRes.arrayBuffer();
+        const mime  = body.image.mimeType || "image/jpeg";
+        const b64   = `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
+        const reply = await analisarImagem(b64);
+        await sendZApiMessage(phone, reply || "Recebi sua imagem 📸\n\nPode descrever o que está acontecendo? 😊");
       } catch (e) {
-        console.error("Erro imagem WhatsApp:", e.message);
+        console.error("Erro imagem:", e.message);
         await sendZApiMessage(phone, "Recebi sua imagem 📸\n\nPode descrever o que está acontecendo? 😊");
       }
       return;
     }
 
-    // Mensagem de áudio
+    // ── ÁUDIO ───────────────────────────────────────────────
     if (body.audio?.audioUrl) {
-      console.log(`🎙️ Áudio recebido de ${phone}`);
+      console.log(`🎙️ Áudio de ${phone}`);
       try {
         const transcricao = await transcribeAudio(body.audio.audioUrl);
         if (transcricao) {
           console.log(`📝 Transcrição: "${transcricao}"`);
-          const chatId = `zapi_${phone}`;
           const reply = await processMessage(transcricao, chatId, phone);
           if (reply) await sendZApiMessage(phone, `🎙️ _Entendi seu áudio:_\n"${transcricao}"\n\n${reply}`);
         } else {
-          await sendZApiMessage(phone, "Recebi seu áudio 🎙️\n\nMas não consegui entender. Pode digitar sua mensagem? 😊");
+          // Transcrição falhou — inicia o fluxo se for novo usuário, senão apenas pede que digite
+          const sessaoExiste = getSession(chatId);
+          if (!sessaoExiste) {
+            // Usuário novo mandando áudio como primeira mensagem — inicia o fluxo
+            const reply = await processMessage("__init__", chatId, phone);
+            if (reply) {
+              await sendZApiMessage(phone, reply + "\n\n_Recebi um áudio mas não consegui entender. Pode digitar? 😊_");
+            }
+          } else {
+            await sendZApiMessage(phone, "Recebi seu áudio 🎙️\n\nMas não consegui entender. Pode digitar sua mensagem? 😊");
+          }
         }
       } catch (e) {
-        console.error("Erro áudio WhatsApp:", e.message);
-        await sendZApiMessage(phone, "Recebi seu áudio 🎙️\n\nTive um problema ao processar. Pode digitar sua mensagem? 😊");
+        console.error("Erro áudio:", e.message);
+        await sendZApiMessage(phone, "Recebi seu áudio 🎙️\n\nTive um problema. Pode digitar? 😊");
       }
       return;
     }
 
-    // Mensagem de texto
+    // ── TEXTO ───────────────────────────────────────────────
     const message = body.text?.message || body.caption || "";
-    if (!message) return;
+    if (!message.trim()) return;
 
-    console.log(`📩 WhatsApp de ${phone}: ${message}`);
+    console.log(`📩 ${phone}: "${message}"`);
 
-    const chatId = `zapi_${phone}`;
     const reply = await processMessage(message, chatId, phone);
     if (reply) await sendZApiMessage(phone, reply);
 
   } catch (e) {
-    console.error("❌ Erro no webhook WhatsApp:", e.message, e.stack?.split("\n")[1]);
-    // Não re-throw — evita crash do processo
+    console.error("❌ Erro webhook:", e.message, e.stack?.split("\n")[1]);
   }
 });
 
