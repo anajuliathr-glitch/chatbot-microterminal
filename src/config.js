@@ -12,4 +12,6 @@ export default {
   zapiInstance: process.env.ZAPI_INSTANCE || "",
   zapiToken: process.env.ZAPI_TOKEN || "",
   zapiClientToken: process.env.ZAPI_CLIENT_TOKEN || "",
+  openaiKey: process.env.OPENAI_API_KEY || "",
+  supportPhone: process.env.SUPPORT_PHONE || "",
 };

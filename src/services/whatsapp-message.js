@@ -1,6 +1,7 @@
 import { responderComRAG } from "./ai.js";
 import { getSession, saveSession, deleteSession } from "./session.js";
 import { log } from "./logger.js";
+import { notificarSuporte } from "./zapi.js";
 import config from "../config.js";
 
 export async function processMessage(message, chatId, from) {
@@ -94,9 +95,24 @@ export async function processMessage(message, chatId, from) {
       session.attempts++;
       if (session.attempts === 1) {
         reply = `Vamos checar passo a passo 👇\n\n🔹 IP (${session.ip})\nConfere se digitou exatamente esse IP\n\n🔹 Cabo 🔌\nTira e coloca o cabo de rede\n\n🔹 Ping\nNo cmd: ping ${session.ip}\n\n🔹 Reiniciar 🔄\nDesliga e liga o microterminal\n\nMe fala o que aconteceu 😊`;
+      } else if (session.attempts === 2) {
+        reply = `Ainda não foi 😕 Vamos tentar:\n\n1. Desliga o microterminal da tomada\n2. Espera 30 segundos\n3. Liga de novo\n4. Configura o IP (1, IP, Enter, H)\n\nO que aconteceu? 😊`;
       } else {
-        reply = `Ainda não foi 😕 Vamos tentar:\n\n1. Desliga o microterminal da tomada\n2. Espera 30 segundos\n3. Liga de novo\n4. Configura o IP (1, IP, Enter, H)\n\nSe não funcionar, pode ser necessário suporte presencial 🛠️`;
+        // Após 3 tentativas — escalação para humano
+        session.step = "escalation";
+        reply = `Entendo que está sendo difícil resolver 😕\n\nJá tentamos bastante coisa e o problema persiste.\n\nQuer que eu chame um técnico da ThR para te ajudar pessoalmente? 👨‍🔧\n\nResponde *sim* ou *não*`;
       }
+    }
+  }
+
+  else if (session.step === "escalation") {
+    if (["sim","s","ss","pode","quero"].some(w => msg.includes(w))) {
+      notificarSuporte(session.name, from, session.ip).catch(() => {});
+      deleteSession(chatId);
+      return `Perfeito! 👍\n\nJá avisei nossa equipe técnica.\n\nEm breve um técnico da ThR entrará em contato com você 🛠️\n\nQualquer dúvida, é só chamar aqui!`;
+    } else {
+      session.step = "config_terminal";
+      reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo agora no microterminal?`;
     }
   }
 
