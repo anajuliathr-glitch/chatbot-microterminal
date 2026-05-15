@@ -2,6 +2,7 @@ import { Router } from "express";
 import fetch from "node-fetch";
 import config from "../config.js";
 import { processMessage } from "../services/whatsapp-message.js";
+import { analisarImagem } from "../services/ai.js";
 
 const router = Router();
 
@@ -40,8 +41,24 @@ router.post("/webhook", async (req, res) => {
   if (body.type !== "ReceivedCallback") return;
 
   const phone = body.phone;
-  const message = body.text?.message || body.caption || "";
 
+  // Mensagem de imagem
+  if (body.image?.imageUrl) {
+    try {
+      const imageResponse = await fetch(body.image.imageUrl);
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      const mimeType = body.image.mimeType || "image/jpeg";
+      const base64 = `data:${mimeType};base64,${Buffer.from(arrayBuffer).toString("base64")}`;
+      const reply = await analisarImagem(base64);
+      if (reply) await sendZApiMessage(phone, reply);
+    } catch (e) {
+      console.error("Erro imagem WhatsApp:", e.message);
+      await sendZApiMessage(phone, "Recebi sua imagem 📸\n\nPode descrever o que está acontecendo? Assim consigo te ajudar melhor 😊");
+    }
+    return;
+  }
+
+  const message = body.text?.message || body.caption || "";
   if (!phone || !message) return;
 
   console.log(`📩 WhatsApp de ${phone}: ${message}`);
