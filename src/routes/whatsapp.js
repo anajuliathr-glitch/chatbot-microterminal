@@ -45,7 +45,8 @@ router.post("/webhook", async (req, res) => {
       return;
     }
 
-    console.log(`📥 Webhook recebido de ${phone} | tipo: ${body.type} | msgId: ${msgId}`);
+    console.log(`📥 Webhook | fromMe:${body.fromMe} tipo:${body.type} phone:${phone} msgId:${msgId} hasAudio:${!!body.audio} hasImage:${!!body.image} text:"${(body.text?.message || body.caption || "").slice(0, 60)}"`);
+
 
     // Mensagem de imagem
     if (body.image?.imageUrl) {
