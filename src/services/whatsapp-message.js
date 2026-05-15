@@ -108,7 +108,7 @@ export async function processMessage(message, chatId, from) {
       } else {
         // Após 3 tentativas — escalação para humano
         session.step = "escalation";
-        reply = `Entendo que está sendo difícil resolver 😕\n\nJá tentamos bastante coisa e o problema persiste.\n\nQuer que eu chame um técnico da ThR para te ajudar pessoalmente? 👨‍🔧\n\nResponde *sim* ou *não*`;
+        reply = `Entendo que está sendo difícil resolver 😕\n\nJá tentamos bastante coisa e o problema persiste.\n\nPosso te passar para a fila de suporte humano da ThR, e em breve um técnico entra em contato com você por aqui 👨‍🔧\n\nQuer que eu faça isso? Responde *sim* ou *não*`;
       }
     }
   }
@@ -117,7 +117,7 @@ export async function processMessage(message, chatId, from) {
     if (["sim","s","ss","pode","quero"].some(w => msg.includes(w))) {
       notificarSuporte(session.name, from, session.ip).catch(() => {});
       deleteSession(chatId);
-      return `Perfeito! 👍\n\nJá avisei nossa equipe técnica.\n\nEm breve um técnico da ThR entrará em contato com você 🛠️\n\nQualquer dúvida, é só chamar aqui!`;
+      return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um de nossos técnicos vai entrar em contato com você aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`;
     } else {
       session.step = "config_terminal";
       reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo agora no microterminal?`;
