@@ -1,8 +1,10 @@
 import { responderComRAG } from "./ai.js";
 import { getSession, saveSession, deleteSession } from "./session.js";
+import { log } from "./logger.js";
 import config from "../config.js";
 
 export async function processMessage(message, chatId, from) {
+  log(`[WhatsApp] [${from}] ${message}`);
   let session = getSession(chatId);
   const now = Date.now();
 
