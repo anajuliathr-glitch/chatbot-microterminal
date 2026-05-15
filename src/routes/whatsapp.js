@@ -1,46 +1,61 @@
 import { Router } from "express";
-import { getQRCode, getStatus, sendMessage } from "../services/whatsapp-client.js";
+import fetch from "node-fetch";
+import config from "../config.js";
 import { processMessage } from "../services/whatsapp-message.js";
 
 const router = Router();
 
+const ZAPI_BASE = `https://api.z-api.io/instances/${config.zapiInstance}/token/${config.zapiToken}`;
+
+async function sendZApiMessage(phone, message) {
+  try {
+    const response = await fetch(`${ZAPI_BASE}/send-text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, message }),
+    });
+    if (!response.ok) {
+      console.error("Erro Z-API envio:", await response.text());
+    } else {
+      console.log(`✅ Mensagem enviada para ${phone}`);
+    }
+  } catch (e) {
+    console.error("Erro ao enviar Z-API:", e.message);
+  }
+}
+
 router.post("/webhook", async (req, res) => {
-  const { message, from } = req.body;
-  if (!message || !from) {
-    return res.status(400).json({ error: "message e from são obrigatórios" });
-  }
+  // Responde imediatamente para o Z-API não dar timeout
+  res.status(200).json({ ok: true });
 
-  const chatId = `webhook_${from}`;
-  const reply = await processMessage(message, chatId, from);
-  res.json({ reply });
-});
+  const body = req.body;
 
-router.get("/qrcode", (req, res) => {
-  const qr = getQRCode();
-  if (!qr) {
-    return res.json({ qr: null, status: getStatus(), message: "QR code indisponível. Status: " + getStatus() });
+  // Ignora mensagens enviadas pelo próprio bot
+  if (body.fromMe) return;
+
+  // Aceita só mensagens recebidas
+  if (body.type !== "ReceivedCallback") return;
+
+  const phone = body.phone;
+  const message = body.text?.message || body.caption || "";
+
+  if (!phone || !message) return;
+
+  console.log(`📩 WhatsApp de ${phone}: ${message}`);
+
+  const chatId = `zapi_${phone}`;
+  const reply = await processMessage(message, chatId, phone);
+
+  if (reply) {
+    await sendZApiMessage(phone, reply);
   }
-  res.json({ qr, status: getStatus() });
 });
 
 router.get("/status", (req, res) => {
   res.json({
-    status: getStatus(),
-    hasQR: !!getQRCode(),
+    status: "online",
+    zapi: config.zapiInstance ? "configurado" : "nao configurado",
   });
-});
-
-router.post("/send", async (req, res) => {
-  const { to, message } = req.body;
-  if (!to || !message) {
-    return res.status(400).json({ error: "to e message são obrigatórios" });
-  }
-  try {
-    await sendMessage(to, message);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
 });
 
 export default router;

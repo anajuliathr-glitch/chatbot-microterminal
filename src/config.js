@@ -9,4 +9,6 @@ export default {
   sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || "180000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
   whatsappSessionPath: process.env.WHATSAPP_SESSION_PATH || "./whatsapp-session",
+  zapiInstance: process.env.ZAPI_INSTANCE || "",
+  zapiToken: process.env.ZAPI_TOKEN || "",
 };
