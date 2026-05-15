@@ -28,14 +28,15 @@ router.post("/webhook", async (req, res) => {
     const body = req.body;
 
     // Ignora mensagens enviadas pelo próprio bot
-    if (body.fromMe === true) return;
+    if (body.fromMe) return;
 
     // Aceita só mensagens recebidas
     if (body.type !== "ReceivedCallback") return;
 
     // Normaliza número — remove @c.us, @s.whatsapp.net etc.
-    const phone = String(body.phone || "").replace(/@.*$/, "").trim();
-    if (!phone) return;
+    if (!body.phone) return;
+    const phone = String(body.phone).replace(/@.*$/, "").trim();
+    if (!phone || phone === "undefined" || phone === "null") return;
 
     // Ignora grupos (número contém "-")
     if (phone.includes("-")) return;

@@ -3,15 +3,16 @@ import { getSession, saveSession, deleteSession } from "./session.js";
 import { log } from "./logger.js";
 import { notificarSuporte } from "./zapi.js";
 
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 180_000;
+
 export async function processMessage(message, chatId, from) {
   log(`[WhatsApp] [${from}] ${message}`);
 
   let session = getSession(chatId);
   const now = Date.now();
-  const sessionTimeout = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 180000;
 
-  if (session && now - session.lastInteraction > sessionTimeout) {
-    console.log(`⏰ Sessão expirada para ${from} — reiniciando`);
+  if (session && now - session.lastInteraction > SESSION_TIMEOUT) {
+    console.log(`⏰ Sessão expirada para ${from}`);
     deleteSession(chatId);
     session = null;
   }
@@ -22,75 +23,77 @@ export async function processMessage(message, chatId, from) {
   }
 
   const msg = message.toLowerCase().trim();
+  console.log(`🔄 [${from}] step="${session.step}" isNew=${isNew} msg="${msg.slice(0, 50)}"`);
 
-  // Iniciador silencioso — usado quando áudio falha em usuário novo
+  // ── Iniciador silencioso (usado quando áudio chega sem sessão) ──
   if (msg === "__init__") {
-    if (session.step === "start") {
+    if (isNew) {
       session.step = "ask_name";
       session.lastInteraction = now;
       saveSession(chatId, session);
       return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
     }
-    return null; // Sessão já existe, não faz nada
+    return null;
   }
 
-  // Comandos globais
+  // ── Comandos globais ──
   if (msg === "reset") {
     deleteSession(chatId);
     return "Memória resetada 🔄\n\nPode começar de novo quando quiser 😊";
   }
 
-  if (["obrigado","obrigada","obg","valeu","tchau","até","flw"].some(w => msg.includes(w))) {
+  if (["obrigado","obrigada","obg","valeu","tchau","flw"].some(w => msg.includes(w))) {
     deleteSession(chatId);
     return "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍";
   }
 
-  // Se a sessão foi perdida mas o usuário já está falando sobre um problema
+  // ── Sessão nova com contexto de problema ──
   if (isNew && looksLikeProblem(msg)) {
     session.step = "ask_name_then_problem";
     session.pendingProblem = message;
     session.lastInteraction = now;
     saveSession(chatId, session);
-    return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nEntendi que você está com um problema — me diz seu nome e já te ajudo! 👍`;
+    return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nEntendi que você tem um problema — me diz seu nome que já te ajudo! 👍`;
   }
 
   let reply = "";
 
   switch (session.step) {
 
+    // ── start ──────────────────────────────────────────────────
     case "start": {
       session.step = "ask_name";
       reply = `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
       break;
     }
 
+    // ── ask_name ───────────────────────────────────────────────
     case "ask_name": {
-      session.name = message.split(" ")[0];
+      session.name = message.trim().split(" ")[0];
       session.step = "ask_problem";
       reply = `Prazer, ${session.name}! 😊\n\nPode me contar o que está acontecendo?`;
       break;
     }
 
-    // Caso especial: usuário descreveu o problema antes de informar o nome
+    // ── ask_name_then_problem ──────────────────────────────────
     case "ask_name_then_problem": {
-      session.name = message.split(" ")[0];
+      session.name = message.trim().split(" ")[0];
       const problema = session.pendingProblem || "";
       session.pendingProblem = null;
       session.step = "ask_problem";
       session.lastInteraction = now;
       saveSession(chatId, session);
-      // Processa o problema pendente
       return processMessage(problema, chatId, from);
     }
 
+    // ── ask_problem ────────────────────────────────────────────
     case "ask_problem": {
-      // Usuário diz que está tudo bem
-      if (["nada","nada não","de boa","tranquilo","testando","resolvido","funcionou","foi"].some(w => msg.includes(w))) {
+      if (["nada","de boa","tranquilo","testando","resolvido"].some(w => msg.includes(w))) {
         deleteSession(chatId);
         return `Ahh que bom, ${session.name || ""}! 😄\n\nEntão já está tudo certo 👍\n\nQualquer coisa, é só chamar!`;
       }
 
-      // Salva antes da chamada IA para não perder estado em caso de crash
+      // Salva antes da IA para não perder estado em caso de crash
       session.lastInteraction = now;
       saveSession(chatId, session);
 
@@ -106,55 +109,58 @@ export async function processMessage(message, chatId, from) {
         reply = `${respostaRAG}\n\n---\nIsso resolveu seu problema? 😊`;
       } else {
         session.step = "ask_ip";
-        reply = buildAskIpMessage(session.name);
+        reply = buildAskIpMsg(session.name);
       }
       break;
     }
 
+    // ── rag_followup ───────────────────────────────────────────
     case "rag_followup": {
-      if (isAffirmative(msg)) {
+      if (isPositive(msg)) {
         deleteSession(chatId);
         return `Boa, ${session.name}! 🎉\n\nFico feliz que ajudou 😄\n\nQualquer coisa, é só chamar!`;
       }
       session.step = "ask_ip";
-      reply = `Entendido, vamos verificar mais a fundo 👇\n\n${buildAskIpMessage(session.name)}`;
+      reply = `Entendido, vamos verificar mais a fundo 👇\n\n${buildAskIpMsg(session.name)}`;
       break;
     }
 
+    // ── ask_ip ─────────────────────────────────────────────────
     case "ask_ip": {
       session.step = "teach_ip";
       if (isNegative(msg)) {
-        reply = `Sem problema! Vamos buscar o IP juntos 👇\n\n1️⃣ Pressione a tecla *Windows*\n2️⃣ Digite: *cmd* e abra\n3️⃣ Digite: *ipconfig*\n4️⃣ Procure por *Endereço IPv4*\n\nMe manda o número que aparecer 😊`;
+        reply = `Sem problema! Vamos buscar o IP juntos 👇\n\n1️⃣ Pressione a tecla *Windows*\n2️⃣ Digite *cmd* e abra\n3️⃣ Digite *ipconfig*\n4️⃣ Procure por *Endereço IPv4*\n\nMe manda o número que aparecer 😊`;
       } else {
         reply = `Perfeito! Me manda o IP 😊`;
       }
       break;
     }
 
+    // ── teach_ip ───────────────────────────────────────────────
     case "teach_ip": {
-      const ipRegex = /\b(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}\b/;
-      const ipMatch = msg.match(ipRegex);
+      const ipMatch = msg.match(/\b((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b/);
       if (ipMatch) {
         session.ip = ipMatch[0];
         session.attempts = 0;
         session.step = "config_terminal";
-        reply = `Perfeito, anotei o IP: *${session.ip}* 👍\n\nAgora no microterminal:\n\n1️⃣ Pressione *1*\n2️⃣ Digite o IP: *${session.ip}*\n3️⃣ Pressione *Enter*\n4️⃣ Pressione *H* para salvar\n\nMe avisa quando terminar 😊`;
+        reply = `Anotei o IP: *${session.ip}* 👍\n\nAgora no microterminal:\n\n1️⃣ Pressione *1*\n2️⃣ Digite o IP: *${session.ip}*\n3️⃣ Pressione *Enter*\n4️⃣ Pressione *H* para salvar\n\nMe avisa quando terminar 😊`;
       } else {
-        reply = `Pode me mandar o número do IP? 😊\n\nEle aparece depois de "Endereço IPv4" e tem esse formato: *192.168.x.x*\n\nSe tiver dificuldade, é só falar que te ajudo 👍`;
+        reply = `Me manda o número do IP 😊\n\nEle fica depois de *Endereço IPv4* e parece com *192.168.x.x*\n\nSe precisar de ajuda para encontrar, é só falar 👍`;
       }
       break;
     }
 
+    // ── config_terminal ────────────────────────────────────────
     case "config_terminal": {
-      if (isAffirmative(msg) || ["conectou","funcionou","foi","deu certo","ok","tá funcionando"].some(w => msg.includes(w))) {
+      if (isPositive(msg)) {
         session.step = "confirm_done";
         reply = `Boa! 👍\n\nSó pra confirmar: está funcionando normalmente agora? 😊`;
       } else {
         session.attempts = (session.attempts || 0) + 1;
         if (session.attempts === 1) {
-          reply = `Vamos checar passo a passo 👇\n\n🔹 *IP digitado:* ${session.ip || "não informado"}\nConferiu se está exatamente igual?\n\n🔹 *Cabo de rede 🔌*\nTira e coloca o cabo\n\n🔹 *Teste de conexão*\nNo cmd: *ping ${session.ip || "IP"}*\n\n🔹 *Reiniciar o microterminal*\nDesliga e liga de novo\n\nMe fala o que aconteceu 😊`;
+          reply = `Vamos checar passo a passo 👇\n\n🔹 *IP:* ${session.ip || "não informado"}\nConferiu se digitou exatamente igual?\n\n🔹 *Cabo de rede* 🔌\nTira e coloca o cabo\n\n🔹 *Ping no cmd:* \`ping ${session.ip || "IP"}\`\n\n🔹 *Reiniciar* 🔄\nDesliga e liga o microterminal\n\nMe fala o que aconteceu 😊`;
         } else if (session.attempts === 2) {
-          reply = `Ainda não foi 😕 Vamos tentar mais uma vez:\n\n1️⃣ *Desligue* o microterminal da tomada\n2️⃣ Aguarde *30 segundos*\n3️⃣ *Ligue* novamente\n4️⃣ Configure o IP de novo: *1 → IP → Enter → H*\n\nO que aconteceu? 😊`;
+          reply = `Ainda não foi 😕 Vamos tentar:\n\n1️⃣ *Desligue* o microterminal da tomada\n2️⃣ Aguarde *30 segundos*\n3️⃣ *Ligue* novamente\n4️⃣ Configure o IP de novo: *1 → IP → Enter → H*\n\nO que aconteceu? 😊`;
         } else {
           session.step = "escalation";
           reply = `Entendo que está sendo difícil resolver 😕\n\nJá tentamos bastante coisa e o problema persiste.\n\nPosso te colocar na fila de suporte humano da ThR — em breve um técnico entra em contato com você aqui pelo WhatsApp 👨‍🔧\n\nQuer que eu faça isso? Responde *sim* ou *não*`;
@@ -163,11 +169,12 @@ export async function processMessage(message, chatId, from) {
       break;
     }
 
+    // ── escalation ─────────────────────────────────────────────
     case "escalation": {
-      if (isAffirmative(msg)) {
+      if (isPositive(msg)) {
         notificarSuporte(session.name, from, session.ip).catch(() => {});
         deleteSession(chatId);
-        return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um de nossos técnicos vai entrar em contato com você aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`;
+        return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um técnico entra em contato aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`;
       } else {
         session.step = "config_terminal";
         reply = `Tudo bem, vamos continuar tentando 💪\n\nMe conta o que está aparecendo no microterminal agora?`;
@@ -175,18 +182,28 @@ export async function processMessage(message, chatId, from) {
       break;
     }
 
+    // ── confirm_done ───────────────────────────────────────────
     case "confirm_done": {
-      if (isAffirmative(msg)) {
+      if (isPositive(msg)) {
         deleteSession(chatId);
         return `Boa, ${session.name}! 🎉\n\nFuncionou 😄\n\nQualquer coisa, é só chamar 👍`;
       }
+      // Não resolveu — volta para tentar de novo com escalação disponível
       session.step = "config_terminal";
-      reply = `Beleza, vamos continuar 👇\n\nO que ainda está acontecendo?`;
+      session.attempts = (session.attempts || 0) + 1;
+      if (session.attempts >= 3) {
+        session.step = "escalation";
+        reply = `Entendo 😕\n\nJá tentamos bastante coisa.\n\nPosso te colocar na fila de suporte humano da ThR para um técnico te ajudar diretamente? 👨‍🔧\n\nResponde *sim* ou *não*`;
+      } else {
+        reply = `Entendido 😕 Vamos continuar tentando!\n\nO que está acontecendo agora?`;
+      }
       break;
     }
 
+    // ── fallback ───────────────────────────────────────────────
     default: {
-      reply = `Se precisar de ajuda com o microterminal, é só me contar o que está acontecendo 😊`;
+      session.step = "ask_problem";
+      reply = `Me conta o que está acontecendo com o microterminal 😊`;
     }
   }
 
@@ -195,20 +212,37 @@ export async function processMessage(message, chatId, from) {
   return reply;
 }
 
-// --- Helpers ---
+// ── Helpers ────────────────────────────────────────────────────────
 
-function isAffirmative(msg) {
-  return ["sim","simm","ss","s ","^s$","foi","funcionou","resolveu","deu certo","conectou","pode","quero","certo","isso","exato","perfeito"].some(w => msg.includes(w));
+/**
+ * Retorna true APENAS se a mensagem é claramente positiva/afirmativa.
+ * "nao deu certo", "não funcionou" → false mesmo contendo palavras positivas.
+ */
+function isPositive(msg) {
+  // Se começa com ou é essencialmente uma negação, não é positivo
+  if (/^(n[aã]o|nop|nope|negativo|nem|nunca)\b/.test(msg)) return false;
+  // Checa palavras afirmativas
+  return [
+    "sim", "ss", "foi", "funcionou", "resolveu", "deu certo",
+    "conectou", "pode", "quero", "certo", "isso", "exato",
+    "perfeito", "tá bom", "ta bom", "ok", "ótimo", "otimo",
+    "consegui", "conectou", "resolvido"
+  ].some(w => msg.includes(w));
 }
 
 function isNegative(msg) {
-  return ["nao","não","neg","nunca","jamais"].some(w => msg.includes(w));
+  return /\bn[aã]o\b|nop|negativo/.test(msg);
 }
 
 function looksLikeProblem(msg) {
-  return ["nao conecta","não conecta","sem conexão","sem conexao","problema","erro","travou","desligou","nao funciona","não funciona","ajuda","preciso","microterminal"].some(w => msg.includes(w));
+  return [
+    "nao conecta", "não conecta", "sem conexão", "sem conexao",
+    "problema", "erro", "travou", "desligou", "nao funciona",
+    "não funciona", "ajuda", "preciso", "microterminal", "terminal"
+  ].some(w => msg.includes(w));
 }
 
-function buildAskIpMessage(name) {
-  return `${name ? `${name}, você` : "Você"} sabe o IP do computador? 😊\n\nSe souber, me manda. Se não souber, é só falar que te ensino a encontrar 👍`;
+function buildAskIpMsg(name) {
+  const n = name ? `${name}, você` : "Você";
+  return `${n} sabe o IP do computador? 😊\n\nSe souber me manda direto. Se não souber, é só falar que te ensino a encontrar 👍`;
 }
