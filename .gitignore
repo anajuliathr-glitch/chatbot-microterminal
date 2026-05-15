@@ -1,0 +1,34 @@
+node_modules/
+.env
+.mcp.json
+*.tmp
+squads/*/state.json
+squads/*/state.json.tmp
+squads/*/output/
+
+# Arquivos sensíveis e locais
+start.ps1
+sessions.db
+logs/
+whatsapp-session/
+.wwebjs_cache/
+.wwebjs_auth/
+
+# Pastas do ExpxAgents (não precisam ir pro servidor)
+_expxagents/
+.agents/
+.claude/
+agents/
+squads/
+mcps/
+
+# Arquivos temporários e de backup
+logs.txt
+*.log
+*.rar
+*.zip
+sessions.db-shm
+sessions.db-wal
+sessions.json.legacy
+.vscode/
+teste.html

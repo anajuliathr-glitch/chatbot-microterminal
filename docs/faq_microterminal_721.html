@@ -1,0 +1,189 @@
+
+<style>
+  .faq-wrap { padding: 1rem 0; }
+  .section { margin-bottom: 1.5rem; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px; padding: 0 0 6px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); margin-bottom: 8px; overflow: hidden; }
+  .card-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card-header:hover { background: var(--color-background-secondary); }
+  .frases { font-size: 13px; color: var(--color-text-secondary); margin: 0; flex: 1; line-height: 1.6; }
+  .arrow { font-size: 12px; color: var(--color-text-tertiary); flex-shrink: 0; margin-top: 2px; transition: transform 0.2s; }
+  .arrow.open { transform: rotate(90deg); }
+  .card-body { display: none; padding: 0 16px 14px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .card-body.open { display: block; }
+  .resposta { font-size: 14px; color: var(--color-text-primary); line-height: 1.7; margin: 10px 0 0; }
+  .resposta strong { font-weight: 500; }
+  .resposta ol, .resposta ul { padding-left: 1.2rem; margin: 6px 0; }
+  .resposta li { margin-bottom: 4px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); margin-right: 6px; }
+  .badge-info { background: var(--color-background-info); color: var(--color-text-info); }
+  .badge-warn { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .btn-suggest { margin-top: 10px; font-size: 13px; padding: 6px 12px; cursor: pointer; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); }
+  .btn-suggest:hover { background: var(--color-background-secondary); }
+</style>
+
+<div class="faq-wrap">
+  <h2 style="sr-only; font-size:18px; font-weight:500; margin: 0 0 1.5rem; color: var(--color-text-primary);">FAQ — Microterminal 721</h2>
+
+  <div class="section">
+    <p class="section-title">Descobrir o IP do computador</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"Como descubro o IP?", "não sei meu IP", "onde fico o IP do servidor?", "o que é IPv4?", "que número eu coloco?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Para descobrir o IP do seu computador:<br>
+          <ol>
+            <li>Clique no botão <strong>Iniciar</strong> do Windows</li>
+            <li>Digite <strong>cmd</strong> e abra o aplicativo</li>
+            <li>Na tela preta, digite <strong>ipconfig</strong> e pressione Enter</li>
+            <li>Procure a linha <strong>Endereço IPv4</strong> — esse é o número que você vai usar</li>
+          </ol>
+          Anote esse número, ele será necessário na configuração.
+        </p>
+        <button class="btn-suggest" onclick="sendPrompt('Não encontro a linha IPv4 no cmd, o que aparece para mim é diferente')">Não encontro a linha IPv4 ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Acessar o menu de configuração do terminal</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"como entro na configuração?", "não aparece nada quando ligo", "onde aperto o P?", "não aparece os pontinhos", "como reinicio o terminal?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Para acessar o menu de configuração:<br>
+          <ol>
+            <li>Desligue o microterminal e ligue novamente</li>
+            <li>Assim que aparecerem os <strong>pontinhos na tela</strong>, pressione imediatamente a tecla <strong>P</strong> no teclado</li>
+            <li>O terminal vai exibir duas opções: IP do servidor e IP do microterminal</li>
+          </ol>
+          <span class="badge badge-warn">atenção</span> O teclado precisa estar conectado antes de ligar o terminal.
+        </p>
+        <button class="btn-suggest" onclick="sendPrompt('Pressionei P mas não entrou no menu de configuração do microterminal')">Pressionei P mas não entrou ↗</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"perdi a tela dos pontinhos", "não deu tempo de apertar P", "entrei errado", "como volto para a tela de configuração?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Sem problema! Basta reiniciar o terminal novamente:<br>
+          <ol>
+            <li>Desligue o microterminal</li>
+            <li>Ligue e fique com o dedo já posicionado na tecla <strong>P</strong></li>
+            <li>Assim que os pontinhos aparecerem, pressione P imediatamente</li>
+          </ol>
+          Essa janela é bem rápida, então deixe o dedo pronto antes de ligar.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Configurar o IP do servidor</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"como coloco o IP?", "onde digito o IP?", "o que faço depois que aparece as duas opções?", "entrei no menu, e agora?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Depois que o menu aparecer:<br>
+          <ol>
+            <li>Pressione a tecla <strong>1</strong> para configurar o IP do servidor</li>
+            <li>Digite o IP do seu computador (aquele que você anotou do ipconfig)</li>
+            <li>Pressione <strong>Enter</strong></li>
+            <li>Pressione a tecla <strong>H</strong> para acessar o menu de finalização</li>
+          </ol>
+        </p>
+        <button class="btn-suggest" onclick="sendPrompt('Digitei o IP mas não sei o que fazer depois, não apareceu a opção de salvar')">Não apareceu a opção de salvar ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Salvar e finalizar</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"como salvo?", "apareceu salvar e cancelar, o que faço?", "pressionei H e agora?", "não sei como finalizar"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          No menu de finalização você verá duas opções: <strong>salvar e sair</strong> e <strong>cancelar</strong>.<br><br>
+          Pressione a tecla <strong>1</strong> para salvar e sair.<br><br>
+          Após isso, aguarde — o terminal vai conectar automaticamente.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Problemas de conexão</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"não conectou", "ficou carregando e não fez nada", "salvei mas não conecta", "o terminal não está conectando"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Se após salvar o terminal não conectar, verifique:<br>
+          <ul>
+            <li>O IP digitado está correto? (confira novamente com ipconfig)</li>
+            <li>O computador está ligado e conectado à mesma rede?</li>
+            <li>O cabo de rede do terminal está bem encaixado?</li>
+          </ul>
+          Se tudo estiver certo e ainda assim não conectar, entre em contato com o suporte.
+        </p>
+        <button class="btn-suggest" onclick="sendPrompt('Verifiquei tudo e o microterminal 721 ainda não conecta, preciso de suporte')">Preciso de suporte humano ↗</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"digitei o IP errado", "coloquei o número errado", "preciso corrigir o IP", "como refaço a configuração?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Para corrigir, basta refazer o processo:<br>
+          <ol>
+            <li>Desligue e ligue o microterminal</li>
+            <li>Pressione <strong>P</strong> quando os pontinhos aparecerem</li>
+            <li>Pressione <strong>1</strong> e redigite o IP correto</li>
+            <li>Pressione <strong>Enter</strong>, depois <strong>H</strong> e depois <strong>1</strong> para salvar</li>
+          </ol>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.arrow');
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.card-body.open').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.arrow.open').forEach(a => a.classList.remove('open'));
+  if (!isOpen) {
+    body.classList.add('open');
+    arrow.classList.add('open');
+  }
+}
+</script>
