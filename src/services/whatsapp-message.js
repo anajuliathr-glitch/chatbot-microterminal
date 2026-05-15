@@ -215,19 +215,31 @@ export async function processMessage(message, chatId, from) {
 // ── Helpers ────────────────────────────────────────────────────────
 
 /**
- * Retorna true APENAS se a mensagem é claramente positiva/afirmativa.
- * "nao deu certo", "não funcionou" → false mesmo contendo palavras positivas.
+ * Retorna true APENAS se a mensagem é claramente positiva.
+ * Detecta negação ANTES da palavra positiva, independente da posição na frase.
+ *
+ * ✅ "sim", "foi", "deu certo", "funcionou"
+ * ❌ "nao deu certo", "terminei, nao deu certo", "não funcionou"
  */
 function isPositive(msg) {
-  // Se começa com ou é essencialmente uma negação, não é positivo
-  if (/^(n[aã]o|nop|nope|negativo|nem|nunca)\b/.test(msg)) return false;
-  // Checa palavras afirmativas
-  return [
+  const affirmatives = [
     "sim", "ss", "foi", "funcionou", "resolveu", "deu certo",
-    "conectou", "pode", "quero", "certo", "isso", "exato",
-    "perfeito", "tá bom", "ta bom", "ok", "ótimo", "otimo",
-    "consegui", "conectou", "resolvido"
-  ].some(w => msg.includes(w));
+    "conectou", "pode", "quero", "certo", "exato",
+    "perfeito", "tá bom", "ta bom", "ótimo", "otimo",
+    "consegui", "resolvido", "tudo certo", "tá ótimo"
+  ];
+
+  for (const word of affirmatives) {
+    if (!msg.includes(word)) continue;
+
+    const affIdx = msg.indexOf(word);
+    // Procura "nao/não" em qualquer posição ANTES ou DENTRO da palavra afirmativa
+    const negMatch = msg.match(/\bn[aã]o\b/);
+    if (negMatch && negMatch.index <= affIdx) continue; // negação antes → não é positivo
+
+    return true;
+  }
+  return false;
 }
 
 function isNegative(msg) {
