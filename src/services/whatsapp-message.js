@@ -48,13 +48,21 @@ export async function processMessage(message, chatId, from) {
       deleteSession(chatId);
       return `Ahh perfeito ${session.name || ""}! 😄\n\nEntão já está tudo certo 👍`;
     }
-    const respostaRAG = await responderComRAG(message, session.name);
+    // Salva sessão antes da chamada IA para não perder o estado em caso de crash
+    session.lastInteraction = Date.now();
+    saveSession(chatId, session);
+    let respostaRAG = null;
+    try {
+      respostaRAG = await responderComRAG(message, session.name);
+    } catch (e) {
+      console.error("Erro RAG no processMessage:", e.message);
+    }
     if (respostaRAG) {
       session.step = "rag_followup";
       reply = `${respostaRAG}\n\n---\nIsso resolveu seu problema? 😊`;
     } else {
       session.step = "ask_ip";
-      reply = `Você sabe o IP do computador?`;
+      reply = `Entendido! 👍\n\nVocê sabe o IP do computador?`;
     }
   }
 
