@@ -47,7 +47,7 @@ function isManualAffirmative(msg) {
   if (isManualNegative(msg)) return false;
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
-  if (msg.trim() === "foi") return true;
+  if (["foi","deu","conectou","funcionou"].includes(msg.trim())) return true;
   const parciais = [
     "agora foi","agora deu","deu certo","foi sim",
     "funcionou","resolveu","resolvido","consegui","conectou",
@@ -56,6 +56,8 @@ function isManualAffirmative(msg) {
     "funcionando agora","conectado","deu sim","sim deu",
     "deu boa","foi isso","agora sim","ahhh agora","ahh agora",
     "agora conectou","ja conectou","já conectou","respondeu",
+    "deu ja","deu já","ja deu","já deu","deu sim","sim deu",
+    "foi la","foi lá","era isso","foi isso","era so","era só",
   ];
   return parciais.some(w => msg.includes(w));
 }
@@ -86,10 +88,15 @@ function forgotToSave(msg) {
   return ["nao salvei","não salvei","esqueci"].some(w => msg.includes(w));
 }
 
-function looksLikeIP(ip) {
-  const clean = ip.trim();
-  const regex = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
-  return regex.test(clean);
+// Extrai o primeiro IP válido de dentro de qualquer mensagem
+function extractIP(msg) {
+  const match = msg.match(/\b((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b/);
+  return match ? match[0] : null;
+}
+
+// Mantido por compatibilidade — agora usa extractIP internamente
+function looksLikeIP(msg) {
+  return extractIP(msg) !== null;
 }
 
 function detectErrorType(msg) {
@@ -124,12 +131,16 @@ function wantsToSendPhoto(msg) {
     "vou te mandar um print","vou mandar um print",
     "vou te mandar uma imagem","vou mandar uma imagem",
     "posso mandar foto","posso mandar print",
+    "posso te mandar foto","posso te mandar print","posso te mandar imagem",
     "vou tirar um print","vou tirar uma foto",
     "mando foto","mando print","mando imagem",
     "te mando foto","te mando print",
     "vou te mostrar","olha so","olha só",
     "deixa eu te mostrar","vou printar",
     "olha essa foto","olha essa imagem","olha esse print",
+    "olha na foto","olha a foto","ta na foto","está na foto",
+    "na foto","na imagem","no print","na screenshot",
+    "tira foto","tirar foto","mandar foto","mandar print",
   ].some(w => msg.includes(w));
 }
 
@@ -335,9 +346,10 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_ip") {
 
-      // Já mandou o IP direto
-      if (looksLikeIP(msg)) {
-        session.ip = msg.trim();
+      // Já mandou o IP direto (ou junto com texto, ex: "é 192.168.1.1")
+      const ipDiretoAsk = extractIP(msg);
+      if (ipDiretoAsk) {
+        session.ip = ipDiretoAsk;
         session.attempts = 0;
         session.step = "config_terminal";
         reply = buildConfigMsg(session.ip);
@@ -361,11 +373,17 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "teach_ip") {
 
-      if (looksLikeIP(msg)) {
-        session.ip = msg.trim();
+      const ipTeach = extractIP(msg);
+      if (ipTeach) {
+        session.ip = ipTeach;
         session.attempts = 0;
         session.step = "config_terminal";
         reply = buildConfigMsg(session.ip);
+      }
+
+      // Quer mandar foto — verificar ANTES do isNegative
+      else if (wantsToSendPhoto(msg)) {
+        reply = `Ainda não consigo receber imagens por aqui 😊\n\nMas pode descrever o que aparece na tela — tipo: "aparece um número 192.168..." — que eu te ajudo a identificar o IP 👍`;
       }
 
       else if (await isNegative(msg)) {
@@ -380,11 +398,6 @@ router.post("/", async (req, res) => {
             reply = `Sem problema! Me conta o que está aparecendo na tela do computador 😊\n\nSe quiser, pode descrever o que você vê que eu te ajudo a encontrar o IP 👍`;
           }
         }
-      }
-
-      // Quer mandar foto no meio do fluxo
-      else if (wantsToSendPhoto(msg)) {
-        reply = `Pelo chat de texto não consigo receber imagens 😊\n\nMas pode descrever o que você está vendo na tela que eu te ajudo a encontrar o IP 👍`;
       }
 
       else {
@@ -402,6 +415,7 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "config_terminal") {
       const errorType = detectErrorType(msg);
+      const ipNovoConfig = extractIP(msg);
 
       // Quer suporte humano remoto
       if (["presencial","remoto","suporte","tecnico","técnico","quero ajuda","nao consigo","não consigo"].some(w => msg.includes(w))) {
@@ -417,9 +431,9 @@ router.post("/", async (req, res) => {
         reply = `Pelo chat de texto não consigo receber imagens 😊\n\nPode descrever o que aparece na tela do microterminal? Por exemplo, tem alguma mensagem de erro? 👍`;
       }
 
-      // Novo IP enviado
-      else if (looksLikeIP(msg) && msg.trim() !== session.ip) {
-        session.ip = msg.trim();
+      // Novo IP enviado (ou junto com texto, ex: "é 192.168.1.100")
+      else if (ipNovoConfig && ipNovoConfig !== session.ip) {
+        session.ip = ipNovoConfig;
         reply = buildConfigMsg(session.ip, true);
       }
 
