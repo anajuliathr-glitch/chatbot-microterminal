@@ -1,0 +1,142 @@
+BASE DE CONHECIMENTO — MICROTERMINAL ThR
+==========================================
+
+## O QUE É O MICROTERMINAL
+
+O microterminal é um dispositivo de ponto de venda (PDV) que funciona como extensão do servidor principal. Ele não processa dados sozinho — apenas exibe e captura informações, se comunicando com o computador servidor via rede local (cabo Ethernet). Por isso, precisa do IP do servidor para funcionar.
+
+A configuração de IP é feita uma única vez. Depois disso, basta ligar que conecta automaticamente.
+
+---
+
+## PROCEDIMENTO COMPLETO DE CONFIGURAÇÃO DE IP
+
+Este é o processo padrão para configurar o IP do servidor no microterminal:
+
+1. Descubra o IP do computador servidor (veja seção abaixo)
+2. Desligue o microterminal da tomada
+3. Ligue novamente
+4. Assim que aparecerem os PONTINHOS na tela, pressione imediatamente a tecla P no teclado
+   ATENÇÃO: o teclado deve estar conectado ANTES de ligar o terminal
+   ATENÇÃO: a janela dos pontinhos é muito rápida — deixe o dedo posicionado no P antes de ligar
+5. Vai aparecer um menu com duas opções: IP do servidor e IP do microterminal
+6. Pressione a tecla 1 para configurar o IP do servidor
+7. Digite o IP do computador (ex: 192.168.1.100)
+8. Pressione Enter
+9. Pressione a tecla H para acessar o menu de finalização
+10. No menu de finalização, pressione 1 para Salvar e Sair
+11. Aguarde — o terminal vai conectar automaticamente ao servidor
+
+---
+
+## COMO DESCOBRIR O IP DO COMPUTADOR (ipconfig)
+
+1. Clique no botão Iniciar do Windows (tecla Windows)
+2. Digite cmd e abra o aplicativo
+3. Na tela preta, digite: ipconfig
+4. Pressione Enter
+5. Procure a linha "Endereço IPv4" — esse é o número a usar
+
+ATENÇÃO IMPORTANTE — COMPUTADOR COM WIFI E CABO:
+Se o computador tiver WiFi e cabo de rede ao mesmo tempo, o ipconfig vai mostrar DOIS endereços IPv4.
+Use SEMPRE o IP do cabo de rede (aparece sob "Adaptador Ethernet" ou "Ethernet").
+NÃO use o IP do WiFi (aparece sob "Adaptador de Rede sem Fio" ou "Wi-Fi").
+O microterminal usa conexão cabeada, então precisa do IP da interface com cabo.
+
+---
+
+## PROBLEMAS MAIS COMUNS E SOLUÇÕES
+
+### PROBLEMA: Não conseguiu pressionar P a tempo
+CAUSA: A janela dos pontinhos é muito rápida
+SOLUÇÃO:
+- Desligue o microterminal
+- ANTES de ligar, posicione o dedo já na tecla P
+- Ligue e pressione P imediatamente
+- Se não funcionar, verifique se o teclado estava conectado antes de ligar
+
+### PROBLEMA: Menu não apareceu após pressionar P
+CAUSA: Teclado não estava conectado ao ligar, ou P foi pressionado tarde demais
+SOLUÇÃO:
+- Verifique se o teclado USB está plugado firmemente
+- Desligue o terminal, mantenha o teclado conectado, ligue e pressione P imediatamente
+
+### PROBLEMA: Terminal não conecta após configurar o IP
+POSSÍVEIS CAUSAS E SOLUÇÕES:
+1. IP digitado errado — refaça o processo com o IP correto do ipconfig
+2. Computador com WiFi e cabo — confirme que usou o IP do CABO, não do WiFi
+3. Cabo de rede solto — retire e reconecte o cabo dos dois lados
+4. Computador e terminal em redes diferentes — devem estar no mesmo switch/roteador
+5. Servidor não está rodando — verifique se o programa do servidor está aberto no computador
+6. Firewall bloqueando — verifique se o software está liberado no firewall/antivírus
+
+TESTE DE DIAGNÓSTICO — PING:
+Para saber se o computador alcança o IP configurado:
+1. Abra o cmd no computador
+2. Digite: ping [IP do microterminal, ex: 192.168.1.100]
+3. Se aparecer "resposta de..." → rede ok, problema pode ser no software
+4. Se aparecer "tempo esgotado" ou "falha" → problema de rede ou IP errado
+
+### PROBLEMA: IP digitado errado
+SOLUÇÃO: Refaça o processo completo
+- Desligue e ligue o terminal
+- Pressione P nos pontinhos
+- Pressione 1, redigite o IP correto, Enter, H, 1 para salvar
+
+### PROBLEMA: Terminal desligou sozinho / tela apagou
+POSSÍVEIS CAUSAS:
+- Modo de economia de energia
+- Queda de energia / problema na tomada ou estabilizador
+SOLUÇÃO:
+- Pressione qualquer tecla para "acordar"
+- Se não responder, desligue e ligue novamente
+- Se perdeu a configuração, refaça o processo do P
+
+### PROBLEMA: Aparece "Connection refused" ou "Connection timed out" na tela
+SIGNIFICADO: O terminal não está conseguindo se comunicar com o servidor
+CAUSAS MAIS COMUNS:
+- IP errado configurado
+- Programa do servidor fechado ou travado no computador
+- Firewall/antivírus bloqueando a porta de comunicação
+- Computador e terminal em redes físicas diferentes
+
+### PROBLEMA: Terminal fica carregando e não conecta
+SOLUÇÃO:
+- Verifique o IP com ipconfig e confirme se está correto no terminal
+- Cheque o cabo de rede — tire e recoloque firmemente
+- Reinicie o terminal (desliga da tomada, aguarda 30 segundos, liga de novo)
+- Refaça a configuração de IP do zero
+
+---
+
+## INFORMAÇÕES SOBRE O ATENDIMENTO ThR
+
+A ThR oferece suporte técnico REMOTO — por WhatsApp e por ligação telefônica.
+Não há atendimento presencial.
+
+Quando o problema não pode ser resolvido pelo atendimento automatizado, o cliente é encaminhado para a fila de suporte humano da ThR, onde um técnico entra em contato via WhatsApp ou ligação para acompanhar o caso remotamente.
+
+---
+
+## DÚVIDAS FREQUENTES DOS CLIENTES
+
+P: O que são os "pontinhos" na tela?
+R: São pontos que aparecem rapidamente na tela durante a inicialização do microterminal. É o momento exato para pressionar a tecla P e entrar no menu de configuração.
+
+P: Preciso fazer a configuração toda vez que ligar?
+R: Não. A configuração é feita uma única vez. O IP fica salvo e o terminal conecta automaticamente nas próximas vezes.
+
+P: O IP muda?
+R: O IP pode mudar se o roteador/servidor for reiniciado ou se as configurações de rede forem alteradas. Nesses casos é necessário refazer a configuração.
+
+P: Posso usar WiFi no microterminal?
+R: Não. O microterminal usa exclusivamente conexão via cabo de rede (Ethernet).
+
+P: Qual a diferença entre IP do servidor e IP do microterminal?
+R: O IP do servidor é o endereço do computador onde o software está instalado. O IP do microterminal é o endereço do próprio terminal na rede. Na configuração inicial, o que precisa ser configurado é o IP do SERVIDOR (opção 1 no menu).
+
+P: O teclado precisa ficar conectado ao microterminal o tempo todo?
+R: Só é necessário durante a configuração. No uso normal, o teclado do microterminal é o próprio teclado físico integrado ou o teclado do cliente. O teclado externo (USB) é usado apenas para acessar o menu de configuração.
+
+P: E se eu não tiver um teclado para conectar?
+R: É necessário um teclado para acessar o menu de configuração. Qualquer teclado USB comum funciona.

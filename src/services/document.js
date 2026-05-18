@@ -4,8 +4,10 @@ import stringSimilarity from "string-similarity";
 
 let faqContent = "";
 let docContent = "";
+let kbContent = "";
 let faqChunks = [];
 let docChunks = [];
+let kbChunks = [];
 
 function splitText(text, size = 500) {
   const arr = [];
@@ -18,6 +20,7 @@ function splitText(text, size = 500) {
 function initChunks() {
   faqChunks = splitText(faqContent || "");
   docChunks = splitText(docContent || "");
+  kbChunks  = splitText(kbContent  || "");
 }
 
 export async function loadDocuments() {
@@ -36,12 +39,18 @@ export async function loadDocuments() {
     console.warn("⚠️ DOCX não encontrado");
   }
 
+  try {
+    kbContent = fs.readFileSync("./docs/base_conhecimento.txt", "utf8");
+  } catch {
+    console.warn("⚠️ Base de conhecimento TXT não encontrada");
+  }
+
   initChunks();
-  console.log(`📚 Documentos carregados: FAQ=${faqContent.length} chars, DOCX=${docContent.length} chars`);
+  console.log(`📚 Documentos carregados: FAQ=${faqContent.length} chars, DOCX=${docContent.length} chars, KB=${kbContent.length} chars`);
 }
 
 export function findRelevantChunks(question) {
-  const all = [...faqChunks, ...docChunks];
+  const all = [...faqChunks, ...docChunks, ...kbChunks];
   if (!all.length) return null;
 
   const result = stringSimilarity.findBestMatch(question, all);
