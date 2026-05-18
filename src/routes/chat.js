@@ -124,24 +124,18 @@ function buildConfigMsg(ip, soPassos = false) {
   );
 }
 
-// 🔥 DETECTA INTENÇÃO DE ENVIAR FOTO/PRINT
+// 🔥 DETECTA INTENÇÃO DE ENVIAR ÁUDIO
+// Simples: basta mencionar "audio" ou "áudio" na mensagem
+function wantsToSendAudio(msg) {
+  return msg.includes("audio") || msg.includes("áudio");
+}
+
+// 🔥 DETECTA INTENÇÃO DE ENVIAR FOTO/PRINT/IMAGEM
+// Simples: basta mencionar qualquer uma dessas palavras
 function wantsToSendPhoto(msg) {
-  return [
-    "vou te mandar uma foto","vou mandar uma foto",
-    "vou te mandar um print","vou mandar um print",
-    "vou te mandar uma imagem","vou mandar uma imagem",
-    "posso mandar foto","posso mandar print",
-    "posso te mandar foto","posso te mandar print","posso te mandar imagem",
-    "vou tirar um print","vou tirar uma foto",
-    "mando foto","mando print","mando imagem",
-    "te mando foto","te mando print",
-    "vou te mostrar","olha so","olha só",
-    "deixa eu te mostrar","vou printar",
-    "olha essa foto","olha essa imagem","olha esse print",
-    "olha na foto","olha a foto","ta na foto","está na foto",
-    "na foto","na imagem","no print","na screenshot",
-    "tira foto","tirar foto","mandar foto","mandar print",
-  ].some(w => msg.includes(w));
+  return msg.includes("foto") || msg.includes("imagem") ||
+         msg.includes("print") || msg.includes("screenshot") ||
+         msg.includes("printscreen") || msg.includes("captura");
 }
 
 // 🔥 DETECTA PROBLEMAS VAGOS (sem precisar de RAG)
@@ -223,6 +217,16 @@ router.post("/", async (req, res) => {
       return res.send("Memória resetada 🔄");
     }
 
+    // Áudio — responde igual em qualquer step da conversa
+    if (wantsToSendAudio(msg)) {
+      return res.send(`Aqui pelo chat não consigo receber áudios 😊\n\nPode digitar o que você queria falar que te ajudo normalmente 👍`);
+    }
+
+    // Foto/imagem — responde igual em qualquer step
+    if (wantsToSendPhoto(msg)) {
+      return res.send(`Ainda não consigo receber imagens por aqui 😊\n\nMas pode descrever o que aparece na tela que eu te ajudo a identificar o problema 👍`);
+    }
+
     let session = getSession(session_id);
     const now = Date.now();
 
@@ -283,9 +287,13 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_problem") {
 
+      // Quer mandar áudio
+      if (wantsToSendAudio(msg)) {
+        reply = `Aqui pelo chat não consigo receber áudios 😊\n\nMas pode digitar o que está acontecendo que te ajudo normalmente 👍`;
+      }
+
       // Saudação ou mensagem muito curta — pede para descrever o problema
-      const saudacoes = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai","ok","blz","beleza"];
-      if (saudacoes.some(s => msg.trim() === s) || msg.trim().length <= 2) {
+      else if (["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai","ok","blz","beleza"].some(s => msg.trim() === s) || msg.trim().length <= 2) {
         reply = `Pode me contar o que está acontecendo com o microterminal, ${session.name || ""}? 😊`;
       }
 
@@ -348,7 +356,10 @@ router.post("/", async (req, res) => {
 
       // Já mandou o IP direto (ou junto com texto, ex: "é 192.168.1.1")
       const ipDiretoAsk = extractIP(msg);
-      if (ipDiretoAsk) {
+      if (wantsToSendAudio(msg)) {
+        reply = `Aqui pelo chat não consigo receber áudios 😊\n\nPode digitar o IP do computador? É um número assim: *192.168.x.x* 👍`;
+        // mantém no ask_ip sem mudar o step
+      } else if (ipDiretoAsk) {
         session.ip = ipDiretoAsk;
         session.attempts = 0;
         session.step = "config_terminal";
