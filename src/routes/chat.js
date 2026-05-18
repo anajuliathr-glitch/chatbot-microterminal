@@ -31,7 +31,16 @@ async function classificar(msg) {
 }
 
 function isManualNegative(msg) {
-  return ["nao","não","erro","falhou","nao deu","não deu","deu errado","nada ainda","ainda nao","ainda não","continua","mesma coisa"].some(w => msg.includes(w));
+  return [
+    "nao","não","erro","falhou","nao deu","não deu","deu errado",
+    "nada ainda","ainda nao","ainda não","continua","mesma coisa",
+    // frases de desistência / sem resultado
+    "fiz tudo","tentei tudo","nao adiantou","não adiantou",
+    "nao funcionou","não funcionou","nao resolveu","não resolveu",
+    "nao conectou","não conectou","nao aparece","não aparece",
+    "nao mudou","não mudou","continua igual","mesmo problema",
+    "nao consegui","não consegui","nao foi","nao ta","nao está",
+  ].some(w => msg.includes(w)) || msg.trim() === "nada" || msg.trim() === "nao" || msg.trim() === "não";
 }
 
 function isManualAffirmative(msg) {
@@ -67,6 +76,9 @@ function isManualNoProblem(msg) {
     "ta ok","tá ok","tudo certo","tudo ok",
     "ta resolvido","tá resolvido","ja ta","já tá",
     "ja foi","já foi","consegui resolver",
+    "deu certo","funcionou","ja funciona","já funciona",
+    "ta funcionando","tá funcionando","conectou","resolveu",
+    "consegui","ja conectou","já conectou",
   ].some(w => msg.includes(w));
 }
 
@@ -195,12 +207,6 @@ router.post("/", async (req, res) => {
 
     const msg = normalize(message);
 
-    // Agradecimento / encerramento
-    if (await isThanks(msg)) {
-      deleteSession(session_id);
-      return res.send(`Por nada 😊\n\nSe precisar, é só chamar! 👍`);
-    }
-
     if (msg === "reset") {
       deleteSession(session_id);
       return res.send("Memória resetada 🔄");
@@ -208,6 +214,16 @@ router.post("/", async (req, res) => {
 
     let session = getSession(session_id);
     const now = Date.now();
+
+    // Agradecimento / encerramento
+    if (await isThanks(msg)) {
+      if (!session) {
+        // Sessão já encerrada — silêncio para não ficar em loop
+        return res.send("");
+      }
+      deleteSession(session_id);
+      return res.send(`Por nada 😊\n\nSe precisar, é só chamar! 👍`);
+    }
 
     if (session && now - session.lastInteraction > config.sessionTimeout) {
       deleteSession(session_id);
@@ -238,9 +254,17 @@ router.post("/", async (req, res) => {
     // STEP: ASK_NAME
     // ==========================
     else if (session.step === "ask_name") {
-      session.name = message.trim().split(" ")[0];
-      session.step = "ask_problem";
-      reply = `Prazer, ${session.name}! 😊\n\nPode me dizer o que aconteceu?`;
+      // Se mandou só saudação, pede o nome de novo
+      const saudacoes = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai"];
+      if (saudacoes.some(s => msg.trim() === s)) {
+        reply = `Oi! 😄\n\nQual é o seu nome?`;
+      } else {
+        // Capitaliza o primeiro nome corretamente (ex: "ANA" → "Ana")
+        const primeiroNome = message.trim().split(" ")[0];
+        session.name = primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase();
+        session.step = "ask_problem";
+        reply = `Prazer, ${session.name}! 😊\n\nPode me dizer o que aconteceu?`;
+      }
     }
 
     // ==========================
@@ -248,8 +272,14 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_problem") {
 
+      // Saudação ou mensagem muito curta — pede para descrever o problema
+      const saudacoes = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai","ok","blz","beleza"];
+      if (saudacoes.some(s => msg.trim() === s) || msg.trim().length <= 2) {
+        reply = `Pode me contar o que está acontecendo com o microterminal, ${session.name || ""}? 😊`;
+      }
+
       // Nenhum problema
-      if (await isNoProblem(msg)) {
+      else if (await isNoProblem(msg)) {
         deleteSession(session_id);
         return res.send(`Ahh perfeito ${session.name || ""}! 😄\n\nEntão já está tudo certo 👍\n\nSe precisar de ajuda com o microterminal depois, é só me chamar 😉`);
       }
@@ -471,6 +501,7 @@ router.post("/", async (req, res) => {
         return res.send(`Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um técnico entra em contato aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`);
       } else if (await isNegative(msg)) {
         session.step = "config_terminal";
+        session.attempts = 1; // dá mais 2 tentativas antes de escalar de novo
         reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo no microterminal agora?`;
       } else {
         reply = `Para chamar o suporte, responde *sim*.\nSe quiser continuar tentando, responde *não* 😊`;
