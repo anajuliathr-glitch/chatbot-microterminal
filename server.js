@@ -11,6 +11,7 @@ import { getStatus, getQueueSize } from "./src/services/whatsapp-client.js";
 import { isIAConfigured, getIAModel } from "./src/services/ai.js";
 import chatRouter from "./src/routes/chat.js";
 import whatsappRouter from "./src/routes/whatsapp.js";
+import whatsappMetaRouter from "./src/routes/whatsapp-meta.js";
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));
@@ -27,7 +28,8 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use("/chat", chatRouter);
-app.use("/whatsapp", whatsappRouter);
+app.use("/whatsapp", whatsappRouter);       // Z-API (legado)
+app.use("/whatsapp-meta", whatsappMetaRouter); // Meta Cloud API
 
 app.get("/health", (req, res) => {
   res.json({
