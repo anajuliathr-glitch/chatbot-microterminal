@@ -47,7 +47,7 @@ function isManualAffirmative(msg) {
   if (isManualNegative(msg)) return false;
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
-  if (["foi","deu","conectou","funcionou"].includes(msg.trim())) return true;
+  if (["foi","deu","conectou","funcionou","resolveu"].includes(msg.trim())) return true;
   const parciais = [
     "agora foi","agora deu","deu certo","foi sim",
     "funcionou","resolveu","resolvido","consegui","conectou",
@@ -59,7 +59,10 @@ function isManualAffirmative(msg) {
     "deu ja","deu já","ja deu","já deu","deu sim","sim deu",
     "foi la","foi lá","era isso","foi isso","era so","era só",
   ];
-  return parciais.some(w => msg.includes(w));
+  // Garante que "conectou"/"funcionou" não deem match em "desconectou"/"não funcionou"
+  const msgFinal = msg.trim();
+  if (msgFinal.includes("descon") || msgFinal.startsWith("nao") || msgFinal.startsWith("não")) return false;
+  return parciais.some(w => msgFinal.includes(w));
 }
 
 function isManualThanks(msg) {
@@ -71,17 +74,20 @@ function isManualNeutral(msg) {
 }
 
 function isManualNoProblem(msg) {
-  return [
-    "nada","nada nao","nada não","de boa","tranquilo",
+  // Só palavras que significam "não tenho problema nenhum"
+  // NÃO incluir palavras como "conectou", "funcionou" etc.
+  // pois podem aparecer em "desconectou", "não funcionou"
+  const semProblema = [
+    "nada","de boa","tranquilo",
     "so testando","só testando","testando",
-    "ja resolvi","já resolvi","resolvido",
+    "ja resolvi","já resolvi",
     "ta ok","tá ok","tudo certo","tudo ok",
-    "ta resolvido","tá resolvido","ja ta","já tá",
-    "ja foi","já foi","consegui resolver",
-    "deu certo","funcionou","ja funciona","já funciona",
-    "ta funcionando","tá funcionando","conectou","resolveu",
-    "consegui","ja conectou","já conectou",
-  ].some(w => msg.includes(w));
+    "ta resolvido","tá resolvido",
+    "consegui resolver","ja ta bom","já tá bom",
+  ];
+  // Garante que a mensagem não contenha negação junto
+  const temNegacao = /\bn[aã]o\b|descon|nao foi|nao deu|nao funciona/.test(msg);
+  return !temNegacao && semProblema.some(w => msg.includes(w));
 }
 
 function forgotToSave(msg) {
