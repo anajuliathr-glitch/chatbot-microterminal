@@ -136,16 +136,18 @@
 
     <div class="card">
       <div class="card-header" onclick="toggle(this)">
-        <p class="frases">"não conectou", "ficou carregando e não fez nada", "salvei mas não conecta", "o terminal não está conectando"</p>
+        <p class="frases">"não conectou", "ficou carregando e não fez nada", "salvei mas não conecta", "o terminal não está conectando", "fica na tela preta", "fica carregando"</p>
         <span class="arrow">▶</span>
       </div>
       <div class="card-body">
         <p class="resposta">
           Se após salvar o terminal não conectar, verifique:<br>
           <ul>
-            <li>O IP digitado está correto? (confira novamente com ipconfig)</li>
-            <li>O computador está ligado e conectado à mesma rede?</li>
-            <li>O cabo de rede do terminal está bem encaixado?</li>
+            <li>O IP digitado está correto? Rode o <strong>ipconfig</strong> novamente e confira</li>
+            <li><strong>Atenção:</strong> se o computador tem WiFi e cabo de rede, use o IP do <strong>cabo (Adaptador Ethernet)</strong>, não o do WiFi</li>
+            <li>O computador está ligado e no mesmo ramal de rede que o terminal?</li>
+            <li>O cabo de rede do terminal está bem encaixado dos dois lados?</li>
+            <li>Teste no cmd: <strong>ping [IP do servidor]</strong> — deve aparecer resposta, não "tempo esgotado"</li>
           </ul>
           Se tudo estiver certo e ainda assim não conectar, entre em contato com o suporte.
         </p>
@@ -155,12 +157,12 @@
 
     <div class="card">
       <div class="card-header" onclick="toggle(this)">
-        <p class="frases">"digitei o IP errado", "coloquei o número errado", "preciso corrigir o IP", "como refaço a configuração?"</p>
+        <p class="frases">"digitei o IP errado", "coloquei o número errado", "preciso corrigir o IP", "como refaço a configuração?", "errei o IP"</p>
         <span class="arrow">▶</span>
       </div>
       <div class="card-body">
         <p class="resposta">
-          Para corrigir, basta refazer o processo:<br>
+          Para corrigir, basta refazer o processo do zero:<br>
           <ol>
             <li>Desligue e ligue o microterminal</li>
             <li>Pressione <strong>P</strong> quando os pontinhos aparecerem</li>
@@ -168,6 +170,118 @@
             <li>Pressione <strong>Enter</strong>, depois <strong>H</strong> e depois <strong>1</strong> para salvar</li>
           </ol>
         </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"qual IP usar?", "aparece mais de um IP", "tem WiFi e cabo", "endereço IPv4 aparece duas vezes", "qual o IP certo?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Quando o computador tem WiFi e cabo de rede ao mesmo tempo, o <strong>ipconfig</strong> vai mostrar mais de um Endereço IPv4.<br><br>
+          <strong>Use sempre o IP do cabo de rede</strong> (aparece sob "Adaptador Ethernet" ou "Ethernet").<br>
+          Não use o IP do WiFi (aparece sob "Adaptador de Rede sem Fio" ou "Wi-Fi").<br><br>
+          O microterminal usa conexão cabeada, então precisa do IP da interface com cabo.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Dificuldades com a tecla P</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"não consegui apertar P a tempo", "passou rápido demais", "perdi a janela dos pontinhos", "pressionei P mas não abriu o menu", "não abriu o menu de configuração"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          A janela dos pontinhos é muito rápida. Para não perder:<br>
+          <ol>
+            <li>Desligue o microterminal</li>
+            <li><strong>Antes de ligar</strong>, posicione o dedo já na tecla P</li>
+            <li>Ligue e pressione P imediatamente assim que ligar</li>
+          </ol>
+          <span class="badge badge-warn">atenção</span> O teclado <strong>precisa estar conectado antes de ligar</strong> o terminal, caso contrário a tecla P não vai funcionar.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Erros e telas comuns</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"aparece erro na tela", "aparece um número vermelho", "tela travada", "ficou parado", "não carrega", "aparece Connection refused", "Connection timed out"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Mensagens como <strong>Connection refused</strong> ou <strong>Connection timed out</strong> indicam que o terminal não consegue alcançar o servidor.<br><br>
+          Causas mais comuns:<br>
+          <ul>
+            <li>IP digitado errado — refaça a configuração com o IP correto</li>
+            <li>Software do servidor não está rodando no computador</li>
+            <li>Firewall ou antivírus bloqueando a conexão — verifique se o programa está liberado</li>
+            <li>Computador e terminal em redes diferentes — devem estar no mesmo switch/roteador</li>
+          </ul>
+        </p>
+        <button class="btn-suggest" onclick="sendPrompt('Aparece Connection refused no microterminal, já conferi o IP e ainda assim não funciona')">Já conferi o IP e não funciona ↗</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"o microterminal desligou sozinho", "apagou a tela", "ficou em stand-by", "tela ficou preta do nada", "parou de funcionar do nada"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          O microterminal pode entrar em modo de economia de energia ou perder conexão.<br><br>
+          Tente:<br>
+          <ol>
+            <li>Pressione qualquer tecla para "acordar" o terminal</li>
+            <li>Se não responder, desligue e ligue novamente</li>
+            <li>Se perder a configuração de IP, faça o processo do P novamente</li>
+          </ol>
+          Se acontecer com frequência, verifique se a tomada ou estabilizador está com problema de fornecimento de energia.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Dúvidas gerais</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"o que é o microterminal?", "para que serve?", "como funciona?", "o terminal é um computador?"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          O microterminal é um dispositivo que se conecta à rede local (cabo de rede) e acessa o sistema instalado no servidor (computador principal).<br><br>
+          Ele funciona como uma extensão do servidor — não processa nada sozinho, apenas exibe e captura dados. Por isso, precisa do IP do servidor para funcionar.<br><br>
+          A configuração é feita uma única vez. Depois disso, basta ligar que conecta automaticamente.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggle(this)">
+        <p class="frases">"preciso chamar suporte?", "não consigo resolver sozinho", "quero falar com alguém", "pode me ajudar?", "preciso de suporte humano"</p>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="resposta">
+          Sim! Se após seguir todos os passos o problema persistir, nossa equipe de suporte ThR pode te ajudar diretamente.<br><br>
+          É só pedir e abrimos um chamado — um técnico entra em contato pelo WhatsApp para continuar o atendimento.
+        </p>
+        <button class="btn-suggest" onclick="sendPrompt('Quero falar com o suporte humano da ThR')">Quero suporte humano ↗</button>
       </div>
     </div>
   </div>

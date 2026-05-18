@@ -88,6 +88,23 @@ function detectErrorType(msg) {
   return null;
 }
 
+// 🔥 MONTA MENSAGEM DE CONFIGURAÇÃO COMPLETA (com passo do P)
+function buildConfigMsg(ip, soPassos = false) {
+  const intro = soPassos ? "" : `Anotei o IP: *${ip}* 👍\n\n`;
+  return (
+    `${intro}Agora vamos configurar o microterminal:\n\n` +
+    `1️⃣ *Desligue* o microterminal e *ligue* novamente\n` +
+    `2️⃣ Assim que aparecerem os *pontinhos na tela*, pressione a tecla *P* no teclado\n` +
+    `   _(deixe o dedo já posicionado no P antes de ligar)_\n` +
+    `3️⃣ No menu que aparecer, pressione *1* (IP do servidor)\n` +
+    `4️⃣ Digite o IP: *${ip}*\n` +
+    `5️⃣ Pressione *Enter*\n` +
+    `6️⃣ Pressione *H*\n` +
+    `7️⃣ Pressione *1* para salvar e sair\n\n` +
+    `Aguarde — o terminal vai conectar automaticamente 😊\n\nMe avisa como foi!`
+  );
+}
+
 // 🔥 DETECTA INTENÇÃO DE ENVIAR FOTO/PRINT
 function wantsToSendPhoto(msg) {
   return [
@@ -293,7 +310,7 @@ router.post("/", async (req, res) => {
         session.ip = msg.trim();
         session.attempts = 0;
         session.step = "config_terminal";
-        reply = `Perfeito 👍\n\nAgora no microterminal:\n\n1. Pressione 1\n2. Digite o IP: ${session.ip}\n3. Aperte Enter\n4. Aperte H para salvar\n\nMe avisa se deu certo 😊`;
+        reply = buildConfigMsg(session.ip);
       }
 
       // Sabe o IP mas não mandou ainda
@@ -318,7 +335,7 @@ router.post("/", async (req, res) => {
         session.ip = msg.trim();
         session.attempts = 0;
         session.step = "config_terminal";
-        reply = `Perfeito 👍\n\nAgora no microterminal:\n\n1. Pressione 1\n2. Digite o IP: ${session.ip}\n3. Aperte Enter\n4. Aperte H para salvar\n\nMe avisa se deu certo 😊`;
+        reply = buildConfigMsg(session.ip);
       }
 
       else if (await isNegative(msg)) {
@@ -356,12 +373,29 @@ router.post("/", async (req, res) => {
     else if (session.step === "config_terminal") {
       const errorType = detectErrorType(msg);
 
-      if (forgotToSave(msg)) {
-        reply = `Boa 👍\n\nDepois do IP, aperta H pra salvar 😊`;
+      // Quer suporte humano remoto
+      if (["presencial","remoto","suporte","tecnico","técnico","quero ajuda","nao consigo","não consigo"].some(w => msg.includes(w))) {
+        session.step = "escalation";
+        reply = `Entendido 😊\n\nPosso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação para te ajudar remotamente 👨‍🔧\n\nQuer que eu faça isso? Responde *sim* ou *não*`;
+      }
+
+      else if (forgotToSave(msg)) {
+        reply = `Após digitar o IP e pressionar Enter, aperta *H* e depois *1* para salvar 😊`;
       }
 
       else if (wantsToSendPhoto(msg)) {
         reply = `Pelo chat de texto não consigo receber imagens 😊\n\nPode descrever o que aparece na tela do microterminal? Por exemplo, tem alguma mensagem de erro? 👍`;
+      }
+
+      // Novo IP enviado
+      else if (looksLikeIP(msg) && msg.trim() !== session.ip) {
+        session.ip = msg.trim();
+        reply = buildConfigMsg(session.ip, true);
+      }
+
+      // Não conseguiu pressionar P a tempo
+      else if (["nao consegui","não consegui","passou rapido","passou rápido","perdi","nao deu tempo","nao apareceu pontinho","não apareceu"].some(w => msg.includes(w))) {
+        reply = `Não tem problema! Tenta assim:\n\n1️⃣ Desligue o microterminal\n2️⃣ *Antes de ligar*, posicione o dedo na tecla *P*\n3️⃣ Ligue e pressione o *P imediatamente* assim que ligar\n\nA janela dos pontinhos é bem rápida, por isso é importante já estar com o dedo pronto 😊`;
       }
 
       else if (await isAffirmative(msg)) {
@@ -373,39 +407,73 @@ router.post("/", async (req, res) => {
         session.attempts++;
 
         if (errorType === "ip") {
-          reply = `Confere o IP 👀\n\nPode estar digitado errado 👍`;
+          reply = `Confere o IP 👀\n\nPode estar digitado errado. Refaz o processo:\n\n${buildConfigMsg(session.ip, true)}`;
         } else if (errorType === "network") {
-          reply = `Pode ser rede 🌐\n\nConfere o cabo ou conexão 👍`;
+          reply = `Parece problema de rede 🌐\n\n🔹 O IP digitado foi *${session.ip}* — confere se está certo\n🔹 Tira e recoloca o cabo de rede do microterminal\n_(Se o computador tiver WiFi e cabo, use o IP do *cabo*)_\n\nAinda não conectou? Me conta 😊`;
         } else if (session.attempts === 1) {
-          reply = `Vamos checar tudo passo a passo 👇\n\n🔹 IP (${session.ip})\nConfere se você digitou exatamente esse IP no microterminal.\nSe errou, digita novamente e salva com H 👍\n\n🔹 Cabo 🔌\nTira o cabo de rede do microterminal\nColoca de novo até sentir firme\nSe tiver outro cabo, testa também\n\n🔹 Rede 🌐\nNo computador:\n1. Aperta Windows 🪟\n2. Digita: cmd\n3. Digita: ping ${session.ip}\nSe aparecer "tempo esgotado" ou "falha", pode ser problema de rede\n\n🔹 Reiniciar 🔄\nDesliga o microterminal\nLiga novamente\nE tenta conectar de novo\n\nMe fala o que aconteceu depois disso 😊`;
+          reply = (
+            `Vamos checar 👇\n\n` +
+            `🔹 *IP correto?*\nO IP que você usou foi *${session.ip}* — confere com o ipconfig\n_(Se aparecer WiFi e cabo, use o IP do *cabo de rede*)_\n\n` +
+            `🔹 *Pressinou P na hora certa?*\nDesligue e ligue de novo, com o dedo já posicionado no P antes de ligar\n\n` +
+            `🔹 *Cabo de rede* 🔌\nTira e recoloca o cabo do terminal\n\n` +
+            `Me conta o que aparece agora 😊`
+          );
         } else if (session.attempts === 2) {
-          reply = `Ainda não foi 😕 vamos revisar com calma 👇\n\nVocê conseguiu rodar o ping? (ping ${session.ip})\nO que apareceu na tela?\n\nSe apareceu "tempo esgotado" → problema de rede ou IP errado\nSe apareceu resposta → o problema pode ser no microterminal mesmo\n\nMe conta o que apareceu 👍`;
+          reply = (
+            `Ainda não foi 😕 Tenta assim:\n\n` +
+            `1️⃣ *Desplugue* da tomada\n` +
+            `2️⃣ Aguarde *30 segundos*\n` +
+            `3️⃣ Religue e pressione *P* nos pontinhos\n` +
+            `4️⃣ Pressione *1*, digite *${session.ip}*, Enter, H, 1 para salvar\n\n` +
+            `Funcionou? 😊`
+          );
         } else {
-          reply = `Beleza, vamos aprofundar 👇\n\nNesse ponto pode ser algo mais específico do equipamento.\nTenta isso:\n\n1. Desliga o microterminal da tomada\n2. Espera 30 segundos\n3. Liga de novo\n4. Tenta configurar o IP novamente (pressiona 1, digita ${session.ip || "o IP"}, Enter, H)\n\nSe ainda não funcionar, pode ser necessário acionar o suporte técnico presencial 🛠️\n\nTentou isso? 😊`;
+          session.step = "escalation";
+          reply = (
+            `Entendo que está sendo difícil 😕\n\n` +
+            `Já tentamos várias vezes e o problema persiste.\n\n` +
+            `Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp para te ajudar 👨‍🔧\n\n` +
+            `Quer que eu faça isso? Responde *sim* ou *não*`
+          );
         }
       }
 
       else if (await isNeutral(msg)) {
         reply = session.ip
-          ? `Beleza 👍\n\nConseguiu conectar ou ainda não?`
-          : `Beleza 👍\n\nMe manda o IP pra gente continuar 😊`;
+          ? `Conseguiu conectar ou ainda não? 😊`
+          : `Me manda o IP pra gente continuar 😊`;
       }
 
       else {
         const errorTypeAmbig = detectErrorType(msg);
         if (errorTypeAmbig === "network") {
           session.attempts++;
-          reply = `Entendi, parece problema de rede 🌐\n\nO ping mostrou "tempo esgotado", então o computador não está alcançando o IP ${session.ip || "configurado"}.\n\nPode ser:\n- IP digitado errado no microterminal\n- Cabo de rede solto ou com defeito\n- Problema na rede local\n\nTenta: desliga o cabo, coloca de novo firme, e refaz o ping 👍`;
+          reply = `Parece problema de rede 🌐\n\nO computador não está alcançando o IP *${session.ip || "configurado"}*.\n\nPode ser:\n- IP digitado errado no microterminal\n- Cabo solto ou com defeito\n- WiFi e cabo: certifica que usou o IP do *cabo*\n\nTira o cabo, coloca de novo firme, e tenta de novo 👍`;
         } else if (errorTypeAmbig === "ip") {
-          reply = `Confere o IP 👀\n\nPode estar digitado errado no microterminal.\nTenta digitar novamente: ${session.ip || "o IP correto"} e salva com H 👍`;
+          reply = `Confere o IP 👀\n\nTenta digitar novamente *${session.ip || "o IP correto"}* e salvar (H → 1) 👍`;
         } else {
           const respostaRAGConfig = await responderComRAG(message, session.name);
           if (respostaRAGConfig) {
             reply = `${respostaRAGConfig}\n\n---\nIsso ajudou ou ainda está com problema? 😊`;
           } else {
-            reply = `Pode me contar melhor o que está aparecendo? 😊\n\nPor exemplo:\n- Aparece alguma mensagem de erro?\n- O ping deu "tempo esgotado" ou respondeu?\n- O microterminal mostra alguma tela específica?`;
+            reply = `Pode me contar melhor o que está aparecendo? 😊\n\nPor exemplo:\n- Não conseguiu pressionar P a tempo?\n- Salvou mas não conectou?\n- Aparece alguma mensagem de erro?`;
           }
         }
+      }
+    }
+
+    // ==========================
+    // STEP: ESCALATION
+    // ==========================
+    else if (session.step === "escalation") {
+      if (await isAffirmative(msg)) {
+        deleteSession(session_id);
+        return res.send(`Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um técnico entra em contato aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`);
+      } else if (await isNegative(msg)) {
+        session.step = "config_terminal";
+        reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo no microterminal agora?`;
+      } else {
+        reply = `Para chamar o suporte, responde *sim*.\nSe quiser continuar tentando, responde *não* 😊`;
       }
     }
 

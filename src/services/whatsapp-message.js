@@ -2,6 +2,7 @@ import { responderComRAG } from "./ai.js";
 import { getSession, saveSession, deleteSession } from "./session.js";
 import { log } from "./logger.js";
 import { notificarSuporte } from "./zapi.js";
+import { notificarSuporteMeta } from "./meta.js";
 
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 180_000;
 
@@ -199,15 +200,62 @@ export async function processMessage(message, chatId, from) {
         break;
       }
 
+      // Não conseguiu pressionar P a tempo
+      if (contemAlgum(msg, ["nao consegui", "não consegui", "passou rapido", "passou rápido", "perdi", "nao deu tempo", "não deu tempo", "nao apareceu", "não apareceu"])) {
+        reply = `Não tem problema! Tenta assim:\n\n1️⃣ Desligue o microterminal\n2️⃣ *Antes de ligar*, posicione o dedo na tecla *P*\n3️⃣ Ligue e pressione o *P imediatamente* — assim que aparecer qualquer coisa na tela\n\nA janela dos pontinhos é bem curta, por isso é importante já estar com o dedo pronto 😊`;
+        break;
+      }
+
+      // Não apareceu o menu de configuração
+      if (contemAlgum(msg, ["nao apareceu menu", "não apareceu menu", "nao abriu", "não abriu", "nao entrou", "não entrou", "nao foi", "não foi para o menu"])) {
+        reply = `Quando você pressiona P, o microterminal deve mostrar um menu com as opções de IP.\n\nSe não apareceu, pode ser que o teclado não estava conectado antes de ligar — isso é importante!\n\n🔌 *Verifique:* o teclado estava plugado *antes* de ligar o terminal?\n\nSe estava, tenta pressionar P mais rápido logo que ligar 😊`;
+        break;
+      }
+
+      // Não conectou após salvar
+      if (contemAlgum(msg, ["nao conectou", "não conectou", "salvei e nao", "salvei e não", "carregando", "fica carregando", "nao conecta", "não conecta"])) {
+        reply = `Salvou mas não conectou 🤔 Vamos verificar:\n\n🔹 *IP correto?*\nRodou o \`ipconfig\` no computador e conferiu o *Endereço IPv4*?\n_(Se tiver WiFi e cabo, use o IP do *cabo de rede*)_\n\n🔹 *Cabo de rede* 🔌\nO microterminal está com o cabo encaixado firmemente?\n\n🔹 *Teste de conexão:*\nNo computador, abra o cmd e digite:\n\`ping ${session.ip || "IP_DO_SERVIDOR"}\`\n\nAparece resposta ou "tempo esgotado"?\n\nMe conta o que apareceu 😊`;
+        break;
+      }
+
+      // IP errado — mencionou que digitou errado
+      if (contemAlgum(msg, ["errei", "digitei errado", "ip errado", "errado", "coloquei errado"])) {
+        reply = `Sem problema! Para corrigir:\n\n${buildConfigMsg(session.ip, true)}\n\n_(Refaz o processo do zero: desliga, liga, P, 1, digita o IP certo, Enter, H, 1)_`;
+        break;
+      }
+
       session.attempts = (session.attempts || 0) + 1;
 
       if (session.attempts === 1) {
-        reply = `Vamos checar passo a passo 👇\n\n🔹 *IP:* \`${session.ip || "não informado"}\`\nConferiu se digitou exatamente esse número?\n\n🔹 *Cabo de rede* 🔌\nTira e recoloca o cabo\n\n🔹 *Teste no cmd:* \`ping ${session.ip || "IP"}\`\nAparece resposta ou "tempo esgotado"?\n\n🔹 *Reiniciar o terminal* 🔄\nDesliga e liga de novo\n\nMe conta o que apareceu 😊`;
+        reply = (
+          `Vamos checar 👇\n\n` +
+          `🔹 *Conferiu o IP?*\n` +
+          `O IP que você digitou foi *${session.ip || "?"}*\n` +
+          `Verifique no cmd (\`ipconfig\`) se esse número ainda é o mesmo\n` +
+          `_(Se aparecer WiFi e cabo, use o do *cabo*)_\n\n` +
+          `🔹 *Pressionou P na hora certa?*\n` +
+          `Desligue e ligue de novo o microterminal, com o dedo já posicionado no P\n\n` +
+          `🔹 *Cabo de rede* 🔌\n` +
+          `Tira e recoloca o cabo do terminal\n\n` +
+          `Me conta o que aparece agora 😊`
+        );
       } else if (session.attempts === 2) {
-        reply = `Ainda não foi 😕 Última tentativa antes de chamar suporte:\n\n1️⃣ *Desplugue* o microterminal da tomada\n2️⃣ Aguarde *30 segundos*\n3️⃣ *Religue*\n4️⃣ Configure o IP de novo: *1 → ${session.ip} → Enter → H*\n\nFuncionou agora? 😊`;
+        reply = (
+          `Ainda não foi 😕 Tenta assim:\n\n` +
+          `1️⃣ *Desplugue* o microterminal da tomada\n` +
+          `2️⃣ Aguarde *30 segundos*\n` +
+          `3️⃣ Religue e pressione *P* nos pontinhos\n` +
+          `4️⃣ Pressione *1*, digite *${session.ip}*, Enter, H, 1 para salvar\n\n` +
+          `Funcionou agora? 😊`
+        );
       } else {
         session.step = "escalation";
-        reply = `Entendo que está sendo difícil 😕\n\nJá tentamos várias coisas e o problema persiste.\n\nPosso te colocar na fila de suporte humano da ThR — um técnico entra em contato aqui pelo WhatsApp para te ajudar 👨‍🔧\n\nQuer que eu faça isso? Responde *sim* ou *não*`;
+        reply = (
+          `Entendo que está sendo difícil 😕\n\n` +
+          `Já tentamos várias vezes e o problema persiste.\n\n` +
+          `Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação para te ajudar remotamente 👨‍🔧\n\n` +
+          `Quer que eu faça isso? Responde *sim* ou *não*`
+        );
       }
       break;
     }
@@ -215,7 +263,12 @@ export async function processMessage(message, chatId, from) {
     // ── escalation ────────────────────────────────────────────────
     case "escalation": {
       if (isPositive(msg)) {
-        notificarSuporte(session.name, from, session.ip).catch(() => {});
+        // Usa o notificador certo conforme o canal (meta_ ou zapi_)
+        if (chatId.startsWith("meta_")) {
+          notificarSuporteMeta(session.name, from, session.ip).catch(() => {});
+        } else {
+          notificarSuporte(session.name, from, session.ip).catch(() => {});
+        }
         deleteSession(chatId);
         return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um técnico entra em contato aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`;
       }
@@ -317,7 +370,10 @@ function looksLikeProblem(msg) {
     "nao conecta", "nao conect", "sem conexao", "sem internet",
     "problema", "erro", "travou", "desligou", "nao funciona",
     "nao liga", "caiu", "parou", "nao ta", "nao esta",
-    "ajuda", "preciso", "microterminal", "terminal", "micro"
+    "ajuda", "preciso", "microterminal", "terminal", "micro",
+    "nao aparece", "nao abre", "tela preta", "pontinho", "pontinhos",
+    "nao salva", "nao salvo", "nao sei", "ip", "configurar",
+    "como faco", "como faço", "reiniciar", "religa", "travado"
   ]);
 }
 
@@ -332,7 +388,18 @@ function instrucaoIP() {
 
 function buildConfigMsg(ip, soPassos = false) {
   const intro = soPassos ? "" : `Anotei o IP: *${ip}* 👍\n\n`;
-  return `${intro}Agora no microterminal:\n\n1️⃣ Pressione *1*\n2️⃣ Digite o IP: *${ip}*\n3️⃣ Pressione *Enter*\n4️⃣ Pressione *H* para salvar\n\nMe avisa quando terminar 😊`;
+  return (
+    `${intro}Agora vamos configurar o microterminal:\n\n` +
+    `1️⃣ *Desligue* o microterminal e *ligue* novamente\n` +
+    `2️⃣ Assim que aparecerem os *pontinhos na tela*, pressione a tecla *P* no teclado\n` +
+    `   _(deixe o dedo já posicionado no P antes de ligar)_\n` +
+    `3️⃣ No menu que aparecer, pressione *1* (IP do servidor)\n` +
+    `4️⃣ Digite o IP: *${ip}*\n` +
+    `5️⃣ Pressione *Enter*\n` +
+    `6️⃣ Pressione *H*\n` +
+    `7️⃣ Pressione *1* para salvar e sair\n\n` +
+    `Aguarde — o terminal vai conectar automaticamente 😊\n\nMe avisa como foi!`
+  );
 }
 
 /** Repete a instrução do passo atual quando usuário parece confuso */
@@ -349,7 +416,9 @@ function repetirPasso(session) {
         ? `Preciso que você me mande o IP do computador${nome} 😊\n\nSe não souber como encontrar, é só falar *"não sei"* 👍`
         : buildAskIpMsg(session.name);
     case "config_terminal":
-      return `Você configurou o IP *${session.ip}* no microterminal${nome}? Me avisa se deu certo 😊`;
+      return session.ip
+        ? `Você fez os passos no microterminal${nome}?\n\n_(Desligar → ligar → P nos pontinhos → 1 → IP ${session.ip} → Enter → H → 1 para salvar)_\n\nMe avisa como foi 😊`
+        : `Me conta o que aparece no microterminal agora${nome} 😊`;
     case "escalation":
       return `Quer que eu chame o suporte humano da ThR${nome}?\n\nResponde *sim* para chamar ou *não* para continuar tentando 😊`;
     case "confirm_done":

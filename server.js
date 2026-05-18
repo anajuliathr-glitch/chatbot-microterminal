@@ -91,6 +91,7 @@ async function start() {
   console.log("Digite sua mensagem (ou 'sair'):\n");
 
   rl.on("line", async (input) => {
+    if (!input.trim()) return; // ignora linhas em branco
     if (input.toLowerCase() === "sair") {
       console.log("Encerrando...");
       closeSession();
