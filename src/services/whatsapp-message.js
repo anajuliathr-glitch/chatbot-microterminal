@@ -69,8 +69,11 @@ export async function processMessage(message, chatId, from) {
     // ── start ────────────────────────────────────────────────────
     case "start": {
       session.step = "ask_name";
-      const prefixo = isBusinessHours() ? "" : MSG_FORA_HORARIO;
-      reply = `${prefixo}Qual seu nome?`;
+      if (isBusinessHours()) {
+        reply = `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
+      } else {
+        reply = `${MSG_FORA_HORARIO}Qual seu nome?`;
+      }
       break;
     }
 
