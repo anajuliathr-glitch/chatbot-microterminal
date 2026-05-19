@@ -69,7 +69,8 @@ export async function processMessage(message, chatId, from) {
     // ── start ────────────────────────────────────────────────────
     case "start": {
       session.step = "ask_name";
-      reply = `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
+      const prefixo = isBusinessHours() ? "" : MSG_FORA_HORARIO;
+      reply = `${prefixo}Qual seu nome?`;
       break;
     }
 
@@ -278,7 +279,10 @@ export async function processMessage(message, chatId, from) {
           notificarSuporte(session.name, from, session.ip).catch(() => {});
         }
         deleteSession(chatId);
-        return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um técnico entra em contato aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`;
+        const contatoMsg = isBusinessHours()
+          ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
+          : `Como estamos fora do horário agora, um técnico entra em contato assim que estivermos ON (seg-sex 8h-18h) 🛠️`;
+        return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\n${contatoMsg}\n\nQualquer dúvida, é só chamar!`;
       }
       if (isNegative(msg)) {
         session.step = "config_terminal";
@@ -321,6 +325,19 @@ export async function processMessage(message, chatId, from) {
 // ────────────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────────────
+
+/** Verifica se está no horário de atendimento (seg-sex 8h-18h, fuso Brasília) */
+function isBusinessHours() {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const day  = now.getDay();
+  const hour = now.getHours();
+  return day >= 1 && day <= 5 && hour >= 8 && hour < 18;
+}
+
+const MSG_FORA_HORARIO =
+  `Olá! Você está fora do horário de atendimento (seg-sex 8h-18h) 🫤\n\n` +
+  `Mas não tem problema, sou um BOT de atendimento e posso te ajudar com dúvidas e problemas pontuais sobre o microterminal. ` +
+  `Caso não consigamos resolver hoje, vou registrar seu caso e um técnico entra em contato assim que estivermos ON de novo 😁👍\n\n`;
 
 /** Normaliza a mensagem: lowercase, sem acentos + typos comuns */
 function normalizar(text) {

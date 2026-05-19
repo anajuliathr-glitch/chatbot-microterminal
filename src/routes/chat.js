@@ -200,6 +200,19 @@ function buildConfigMsg(ip, soPassos = false) {
   );
 }
 
+// 🔥 VERIFICA SE ESTÁ NO HORÁRIO DE ATENDIMENTO (seg-sex 8h-18h, fuso Brasília)
+function isBusinessHours() {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const day  = now.getDay();   // 0=Dom, 1=Seg ... 5=Sex, 6=Sáb
+  const hour = now.getHours();
+  return day >= 1 && day <= 5 && hour >= 8 && hour < 18;
+}
+
+const MSG_FORA_HORARIO =
+  `Olá! Você está fora do horário de atendimento (seg-sex 8h-18h) 🫤\n\n` +
+  `Mas não tem problema, sou um BOT de atendimento e posso te ajudar com dúvidas e problemas pontuais sobre o microterminal. ` +
+  `Caso não consigamos resolver hoje, vou registrar seu caso e um técnico entra em contato assim que estivermos ON de novo 😁👍\n\n`;
+
 // 🔥 DETECTA INTENÇÃO DE ENVIAR ÁUDIO
 // Simples: basta mencionar "audio" ou "áudio" na mensagem
 function wantsToSendAudio(msg) {
@@ -338,7 +351,8 @@ router.post("/", async (req, res) => {
     // ==========================
     if (session.step === "start") {
       session.step = "ask_name";
-      reply = `Oi! 😊 Sou a assistente virtual do microterminal da ThR.\n\nQual seu nome?`;
+      const prefixo = isBusinessHours() ? "" : MSG_FORA_HORARIO;
+      reply = `${prefixo}Qual seu nome?`;
     }
 
     // ==========================
@@ -607,7 +621,10 @@ router.post("/", async (req, res) => {
     else if (session.step === "escalation") {
       if (await isAffirmative(msg)) {
         deleteSession(session_id);
-        return res.send(`Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\nEm breve um técnico entra em contato aqui pelo WhatsApp 🛠️\n\nQualquer dúvida, é só chamar!`);
+        const contatoMsg = isBusinessHours()
+          ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
+          : `Como estamos fora do horário agora, um técnico entra em contato assim que estivermos ON (seg-sex 8h-18h) 🛠️`;
+        return res.send(`Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\n${contatoMsg}\n\nQualquer dúvida, é só chamar!`);
       } else if (await isNegative(msg)) {
         session.step = "config_terminal";
         session.attempts = 1; // dá mais 2 tentativas antes de escalar de novo
