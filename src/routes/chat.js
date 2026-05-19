@@ -373,6 +373,10 @@ router.post("/", async (req, res) => {
       const saudacoes = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai"];
       if (saudacoes.some(s => msg.trim() === s)) {
         reply = `Oi! 😄\n\nQual é o seu nome?`;
+      } else if (isManualNoProblem(msg)) {
+        // "só testando", "já resolvi", "de boa" — não tem problema nenhum
+        deleteSession(session_id);
+        return res.send(`Tudo certo! 😊\n\nSe precisar de ajuda com o microterminal, é só chamar 👍`);
       } else {
         // Capitaliza o primeiro nome corretamente (ex: "ANA" → "Ana")
         const primeiroNome = message.trim().split(" ")[0];
@@ -387,12 +391,21 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_problem") {
 
+      // Já mandou o IP direto na descrição do problema
+      const ipNoProblem = extractIP(msg);
+      if (ipNoProblem && !wantsToSendAudio(msg) && !wantsToSendPhoto(msg)) {
+        session.ip = ipNoProblem;
+        session.attempts = 0;
+        session.step = "config_terminal";
+        reply = buildConfigMsg(session.ip);
+      }
+
       // Quer mandar áudio
-      if (wantsToSendAudio(msg)) {
+      else if (wantsToSendAudio(msg)) {
         reply = `Aqui pelo chat não consigo receber áudios 😊\n\nMas pode digitar o que está acontecendo que te ajudo normalmente 👍`;
       }
 
-      // Saudação ou mensagem muito curta — pede para descrever o problema
+      // Saudação ou mensagem muito curta
       else if (["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai","ok","blz","beleza"].some(s => msg.trim() === s) || msg.trim().length <= 2) {
         reply = `Pode me contar o que está acontecendo com o microterminal, ${session.name || ""}? 😊`;
       }
