@@ -10,9 +10,17 @@ function normalize(text) {
   return (text || "")
     .toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/naum/g, "nao")
-    .replace(/vc/g, "você")
-    .replace(/oq/g, "o que");
+    .replace(/\bnaum\b/g, "nao")
+    .replace(/\bvc\b/g, "voce")
+    .replace(/\boq\b/g, "o que")
+    // typos comuns de "sim"
+    .replace(/\bso+m\b/g, "sim")
+    .replace(/\bsi+m+\b/g, "sim")
+    .replace(/\bsi\b/g, "sim")
+    // typos de "nao"
+    .replace(/\bnop+\b/g, "nao")
+    // typos de "ok"
+    .replace(/\bokk+\b/g, "ok");
 }
 
 const CLS_CACHE = new Map();
@@ -391,36 +399,36 @@ router.post("/", async (req, res) => {
     else if (session.step === "teach_ip") {
 
       const ipTeach = extractIP(msg);
-      if (ipTeach) {
+
+      // Mencionou "tempo esgotado" — é resultado de ping, IP provavelmente errado
+      if (msg.includes("tempo esgotado") || msg.includes("time out") || msg.includes("timeout") || msg.includes("sem resposta")) {
+        reply = `"Tempo esgotado" significa que o computador não está alcançando esse endereço — pode ser IP errado ou problema de rede 🌐\n\nPrimeiro vamos confirmar o IP correto:\n1. Abre o *cmd*\n2. Digita *ipconfig*\n3. Me manda o número do *Endereço IPv4*\n\nÉ um número tipo *192.168.x.x* 😊`;
+      }
+
+      else if (ipTeach) {
         session.ip = ipTeach;
         session.attempts = 0;
         session.step = "config_terminal";
         reply = buildConfigMsg(session.ip);
       }
 
-      // Quer mandar foto — verificar ANTES do isNegative
-      else if (wantsToSendPhoto(msg)) {
-        reply = `Ainda não consigo receber imagens por aqui 😊\n\nMas pode descrever o que aparece na tela — tipo: "aparece um número 192.168..." — que eu te ajudo a identificar o IP 👍`;
-      }
-
       else if (await isNegative(msg)) {
         session.attempts = (session.attempts || 0) + 1;
         if (session.attempts === 1) {
-          reply = `Entendido! Vamos tentar de outro jeito 👇\n\n🔹 Clica com o botão direito no ícone do Windows (canto inferior esquerdo)\n🔹 Seleciona "Terminal" ou "PowerShell"\n🔹 Digite: ipconfig\n🔹 Procura por "Endereço IPv4" — é um número tipo 192.168.x.x\n\nO que está aparecendo na tela? Me conta 😊`;
+          reply = `Tenta assim:\n\n▶ Aperta *Windows + R*\n▶ Digita *cmd* e Enter\n▶ Digita *ipconfig* e Enter\n▶ Procura *Endereço IPv4*\n\nÉ um número tipo *192.168.x.x* — me manda quando achar 👍`;
+        } else if (session.attempts === 2) {
+          reply = `Difícil de achar? Tudo bem — me conta o que aparece na tela quando abre o cmd e digita *ipconfig* 😊\n\nDescreve o que você vê que eu te ajudo a identificar o número certo 👍`;
         } else {
-          const respostaRAGIp = await responderComRAG(message, session.name);
-          if (respostaRAGIp) {
-            reply = `${respostaRAGIp}\n\n---\nConseguiu o IP? 😊`;
-          } else {
-            reply = `Sem problema! Me conta o que está aparecendo na tela do computador 😊\n\nSe quiser, pode descrever o que você vê que eu te ajudo a encontrar o IP 👍`;
-          }
+          // Após 3 tentativas sem achar o IP, oferece suporte
+          session.step = "escalation";
+          reply = `Entendo que está difícil encontrar o IP 😕\n\nPosso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato e te ajuda remotamente a localizar tudo 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
         }
       }
 
       else {
         const respostaRAGIp = await responderComRAG(message, session.name);
         if (respostaRAGIp) {
-          reply = `${respostaRAGIp}\n\n---\nQuando tiver o IP, me manda aqui 😊`;
+          reply = `${respostaRAGIp}\n\n---\nConseguiu o IP? 😊`;
         } else {
           reply = `Pode me mandar o IP 👍\n\nSe não souber como encontrar, é só falar que eu te ajudo 😊`;
         }
