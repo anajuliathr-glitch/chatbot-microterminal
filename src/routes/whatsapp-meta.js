@@ -97,20 +97,28 @@ async function handleMessage(msg, metadata) {
     console.log(`🎙️ Áudio de ${phone}`);
     try {
       let transcricao = null;
-      if (mediaId && config.openaiKey) {
+      const transcKey = config.groqKey || config.openaiKey;
+      if (mediaId && transcKey) {
         const media = await downloadMetaMedia(mediaId);
         if (media) {
-          // Cria um Blob com o buffer para o Whisper
+          const useGroq = !!config.groqKey;
+          const apiUrl  = useGroq
+            ? "https://api.groq.com/openai/v1/audio/transcriptions"
+            : "https://api.openai.com/v1/audio/transcriptions";
+          const model   = useGroq ? "whisper-large-v3-turbo" : "whisper-1";
+
+          console.log(`🎙️ Transcrevendo via ${useGroq ? "Groq (grátis)" : "OpenAI"}...`);
+
           const audioBlob = new Blob([media.buffer], { type: media.mimeType || "audio/ogg" });
           const formData  = new FormData();
           formData.append("file", audioBlob, "audio.ogg");
-          formData.append("model", "whisper-1");
+          formData.append("model", model);
           formData.append("language", "pt");
 
           const { default: fetch } = await import("node-fetch");
-          const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          const whisperRes = await fetch(apiUrl, {
             method: "POST",
-            headers: { "Authorization": `Bearer ${config.openaiKey}` },
+            headers: { "Authorization": `Bearer ${transcKey}` },
             body: formData,
           });
           if (whisperRes.ok) {

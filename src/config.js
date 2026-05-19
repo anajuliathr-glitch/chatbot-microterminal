@@ -18,6 +18,7 @@ export default {
   metaPhoneId: process.env.META_PHONE_ID || "",
   metaVerifyToken: process.env.META_VERIFY_TOKEN || "microterminal-thr-2024",
   // Geral
-  openaiKey: process.env.OPENAI_API_KEY || "",
+  groqKey: process.env.GROQ_API_KEY || "",   // preferido para transcrição (grátis)
+  openaiKey: process.env.OPENAI_API_KEY || "", // fallback legado
   supportPhone: process.env.SUPPORT_PHONE || "",
 };
