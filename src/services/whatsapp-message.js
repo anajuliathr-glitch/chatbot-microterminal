@@ -128,9 +128,23 @@ export async function processMessage(message, chatId, from) {
       if (respostaRAG) {
         session.step = "rag_followup";
         reply = `${respostaRAG}\n\n---\nIsso resolveu seu problema? 😊`;
+      } else if (!session.clarificationAsked) {
+        // Primeira tentativa sem entender: pede mais detalhes antes de pular pro IP
+        session.clarificationAsked = true;
+        reply = (
+          `Hmm, não entendi muito bem 😊\n\n` +
+          `Pode me contar melhor o que está acontecendo com o microterminal?\n\n` +
+          `Por exemplo:\n` +
+          `• O terminal está desconectado / não conecta na rede?\n` +
+          `• Aparece alguma mensagem de erro na tela?\n` +
+          `• É uma dúvida sobre como configurar?\n` +
+          `• Outra coisa?\n\n` +
+          `Com mais detalhes consigo te ajudar melhor 👍`
+        );
       } else {
+        // Segunda tentativa ainda sem entender: vai pro fluxo de IP
         session.step = "ask_ip";
-        reply = buildAskIpMsg(session.name);
+        reply = `Entendido! Vamos verificar a configuração 👍\n\n${buildAskIpMsg(session.name)}`;
       }
       break;
     }
