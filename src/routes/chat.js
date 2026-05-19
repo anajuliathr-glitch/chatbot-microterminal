@@ -134,6 +134,8 @@ function isManualAffirmative(msg) {
     "agora conectou","ja conectou","já conectou","respondeu",
     "deu ja","deu já","ja deu","já deu","deu sim","sim deu",
     "foi la","foi lá","era isso","foi isso","era so","era só",
+    "agora apareceu","apareceu o menu","apareceu aqui","abriu o menu",
+    "entrou no menu","apareceu a tela","apareceu as opcoes",
   ];
   // Garante que "conectou"/"funcionou" não deem match em "desconectou"/"não funcionou"
   const msgFinal = msg.trim();
@@ -481,28 +483,36 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_ip") {
 
-      // Já mandou o IP direto (ou junto com texto, ex: "é 192.168.1.1")
-      const ipDiretoAsk = extractIP(msg);
-      if (wantsToSendAudio(msg)) {
+      // Quer suporte humano logo de cara
+      if (["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"].some(w => msg.includes(w))) {
+        session.step = "escalation";
+        reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+      }
+
+      // Áudio
+      else if (wantsToSendAudio(msg)) {
         reply = `Aqui pelo chat não consigo receber áudios 😊\n\nPode digitar o IP do computador? É um número assim: *192.168.x.x* 👍`;
-        // mantém no ask_ip sem mudar o step
-      } else if (ipDiretoAsk) {
-        session.ip = ipDiretoAsk;
-        session.attempts = 0;
-        session.step = "config_terminal";
-        reply = buildConfigMsg(session.ip);
       }
 
-      // Sabe o IP mas não mandou ainda
-      else if (await isAffirmative(msg) || (!await isNegative(msg) && (msg.includes("sei") || msg.includes("tenho") || msg.includes("aqui")))) {
-        session.step = "teach_ip";
-        reply = `Ótimo! Pode me mandar o IP 😊`;
-      }
-
-      // Não sabe
+      // IP direto (ou embutido no texto)
       else {
-        session.step = "teach_ip";
-        reply = `Sem problema! Vamos pegar o IP juntos 👇\n\n1. Aperte a tecla Windows 🪟\n2. Digite: cmd\n3. Abra\n4. Digite: ipconfig\n5. Procure por "IPv4"\n\nMe manda aqui quando achar 👍`;
+        const ipDiretoAsk = extractIP(msg);
+        if (ipDiretoAsk) {
+          session.ip = ipDiretoAsk;
+          session.attempts = 0;
+          session.step = "config_terminal";
+          reply = buildConfigMsg(session.ip);
+        }
+        // Sabe o IP mas não mandou ainda
+        else if (await isAffirmative(msg) || (!await isNegative(msg) && (msg.includes("sei") || msg.includes("tenho") || msg.includes("aqui")))) {
+          session.step = "teach_ip";
+          reply = `Ótimo! Pode me mandar o IP 😊`;
+        }
+        // Não sabe
+        else {
+          session.step = "teach_ip";
+          reply = `Sem problema! Vamos pegar o IP juntos 👇\n\n1. Aperte a tecla Windows 🪟\n2. Digite: cmd\n3. Abra\n4. Digite: ipconfig\n5. Procure por "IPv4"\n\nMe manda aqui quando achar 👍`;
+        }
       }
     }
 
@@ -513,7 +523,14 @@ router.post("/", async (req, res) => {
 
       const ipTeach = extractIP(msg);
 
+      // Desistência — não quer mais tentar
+      if (["nao quero mais","não quero mais","desisti","deixa pra la","deixa pra lá","esquece","cancela","para","nao quero","não quero"].some(w => msg.includes(w))) {
+        session.step = "escalation";
+        reply = `Sem problema! Posso te colocar na fila de *suporte humano* da ThR — um técnico resolve isso com você 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+      }
+
       // Mencionou "tempo esgotado" — é resultado de ping, IP provavelmente errado
+      else
       if (msg.includes("tempo esgotado") || msg.includes("time out") || msg.includes("timeout") || msg.includes("sem resposta")) {
         reply = `"Tempo esgotado" significa que o computador não está alcançando esse endereço — pode ser IP errado ou problema de rede 🌐\n\nPrimeiro vamos confirmar o IP correto:\n1. Abre o *cmd*\n2. Digita *ipconfig*\n3. Me manda o número do *Endereço IPv4*\n\nÉ um número tipo *192.168.x.x* 😊`;
       }
