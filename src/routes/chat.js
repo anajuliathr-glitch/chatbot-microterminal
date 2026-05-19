@@ -10,19 +10,78 @@ function normalize(text) {
   return (text || "")
     .toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+    // \u2500\u2500 abrevia\u00e7\u00f5es e g\u00edrias \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     .replace(/\bnaum\b/g, "nao")
     .replace(/\bvc\b/g, "voce")
     .replace(/\boq\b/g, "o que")
-    // typos comuns de "sim"
+    .replace(/\bpq\b/g, "porque")
+    .replace(/\bmt\b/g, "muito")
+    .replace(/\btb\b/g, "tambem")
+    .replace(/\bmsm\b/g, "mesmo")
+    .replace(/\baki\b/g, "aqui")
+    .replace(/\bblz\b/g, "beleza")
+    .replace(/\bfds\b/g, "fim de semana")
+    .replace(/\bkd\b/g, "cad\u00ea")
+
+    // \u2500\u2500 typos de "sim" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     .replace(/\bso+m\b/g, "sim")
     .replace(/\bsi+m+\b/g, "sim")
     .replace(/\bsi\b/g, "sim")
-    // typos de "nao"
+    .replace(/\bsium\b/g, "sim")
+
+    // \u2500\u2500 typos de "nao" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     .replace(/\bnop+\b/g, "nao")
-    // typos de "ok"
+    .replace(/\bneh\b/g, "nao")
+
+    // \u2500\u2500 typos de "ok" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     .replace(/\bokk+\b/g, "ok")
-    // typos de "ainda"
-    .replace(/\baind[sa]?\b/g, "ainda");
+
+    // \u2500\u2500 typos de "ainda" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    .replace(/\baind[sa]?\b/g, "ainda")
+
+    // \u2500\u2500 microterminal (varia\u00e7\u00f5es mais comuns de typo) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    .replace(/\bmicro\s+terminal\b/g, "microterminal")
+    .replace(/\bmicroterminau\b/g, "microterminal")
+    .replace(/\bmictroterminal\b/g, "microterminal")
+    .replace(/\bmircoterminal\b/g, "microterminal")
+    .replace(/\bmicrotermianl\b/g, "microterminal")
+    .replace(/\bmicrotermial\b/g, "microterminal")
+    .replace(/\bm[i\u00ed]croterminal\b/g, "microterminal")
+
+    // \u2500\u2500 termina\u00e7\u00f5es "au" no lugar de "ou"/"al" (regional/informal) \u2500
+    .replace(/\bterminau\b/g, "terminal")
+    .replace(/\bfuncionau\b/g, "funcionou")
+    .replace(/\bconectau\b/g, "conectou")
+    .replace(/\bdesligau\b/g, "desligou")
+    .replace(/\bligau\b/g, "ligou")
+    .replace(/\bsalvau\b/g, "salvou")
+    .replace(/\btravau\b/g, "travou")
+    .replace(/\bapareceu\b/g, "apareceu") // j\u00e1 \u00e9 correto, mas evita confus\u00e3o
+    .replace(/\berradu\b/g, "errado")
+    .replace(/\btadu\b/g, "tado")         // ex: "tadu errado" \u2192 "tado errado"
+
+    // \u2500\u2500 typos de "problema" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    .replace(/\bpoblema\b/g, "problema")
+    .replace(/\bporblema\b/g, "problema")
+    .replace(/\bproblemon\b/g, "problema")
+    .replace(/\bprobrlema\b/g, "problema")
+
+    // \u2500\u2500 typos de "conectar/conex\u00e3o" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    .replace(/\bconetar\b/g, "conectar")
+    .replace(/\bconectar\b/g, "conectar")  // j\u00e1 correto
+    .replace(/\bconexaum\b/g, "conexao")
+    .replace(/\bkonexao\b/g, "conexao")
+
+    // \u2500\u2500 typos de "configurar" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    .replace(/\bcofigurar\b/g, "configurar")
+    .replace(/\bconfigurau\b/g, "configurou")
+    .replace(/\bconfigurou\b/g, "configurou") // j\u00e1 correto
+
+    // \u2500\u2500 typos de "pressionar" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    .replace(/\bprecionar\b/g, "pressionar")
+    .replace(/\bprecionei\b/g, "pressionei")
+    .replace(/\bpressionau\b/g, "pressionou");
 }
 
 const CLS_CACHE = new Map();

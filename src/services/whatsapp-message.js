@@ -314,12 +314,61 @@ export async function processMessage(message, chatId, from) {
 // Helpers
 // ────────────────────────────────────────────────────────────────────
 
-/** Normaliza a mensagem: lowercase, sem acentos para comparação */
+/** Normaliza a mensagem: lowercase, sem acentos + typos comuns */
 function normalizar(text) {
-  return text
+  return (text || "")
     .toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g, "") // remove acentos
-    .trim();
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .trim()
+
+    // ── abreviações e gírias ──────────────────────────────────────
+    .replace(/\bnaum\b/g, "nao")
+    .replace(/\bvc\b/g, "voce")
+    .replace(/\boq\b/g, "o que")
+    .replace(/\bpq\b/g, "porque")
+    .replace(/\bmt\b/g, "muito")
+    .replace(/\btb\b/g, "tambem")
+    .replace(/\bmsm\b/g, "mesmo")
+    .replace(/\baki\b/g, "aqui")
+    .replace(/\bnop+\b/g, "nao")
+
+    // ── typos de "sim" ────────────────────────────────────────────
+    .replace(/\bso+m\b/g, "sim")
+    .replace(/\bsi+m+\b/g, "sim")
+    .replace(/\bsi\b/g, "sim")
+    .replace(/\bsium\b/g, "sim")
+
+    // ── typos de "ainda" ─────────────────────────────────────────
+    .replace(/\baind[sa]?\b/g, "ainda")
+
+    // ── microterminal ─────────────────────────────────────────────
+    .replace(/\bmicro\s+terminal\b/g, "microterminal")
+    .replace(/\bmicroterminau\b/g, "microterminal")
+    .replace(/\bmictroterminal\b/g, "microterminal")
+    .replace(/\bmircoterminal\b/g, "microterminal")
+    .replace(/\bmicrotermianl\b/g, "microterminal")
+    .replace(/\bmicrotermial\b/g, "microterminal")
+
+    // ── terminações "au" no lugar de "ou"/"al" ────────────────────
+    .replace(/\bterminau\b/g, "terminal")
+    .replace(/\bfuncionau\b/g, "funcionou")
+    .replace(/\bconectau\b/g, "conectou")
+    .replace(/\bdesligau\b/g, "desligou")
+    .replace(/\bligau\b/g, "ligou")
+    .replace(/\bsalvau\b/g, "salvou")
+    .replace(/\btravau\b/g, "travou")
+    .replace(/\berradu\b/g, "errado")
+
+    // ── typos de "problema" ───────────────────────────────────────
+    .replace(/\bpoblema\b/g, "problema")
+    .replace(/\bporblema\b/g, "problema")
+    .replace(/\bproblemon\b/g, "problema")
+
+    // ── typos de "configurar/pressionar" ─────────────────────────
+    .replace(/\bcofigurar\b/g, "configurar")
+    .replace(/\bconfigurau\b/g, "configurou")
+    .replace(/\bprecionar\b/g, "pressionar")
+    .replace(/\bprecionei\b/g, "pressionei");
 }
 
 /** Verifica se a mensagem contém pelo menos uma das palavras/frases */
