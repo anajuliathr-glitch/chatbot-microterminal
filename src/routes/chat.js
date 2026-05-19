@@ -109,11 +109,18 @@ function isManualNegative(msg) {
     "nao conectou","não conectou","nao aparece","não aparece",
     "nao mudou","não mudou","continua igual","mesmo problema",
     "nao consegui","não consegui","nao foi","nao ta","nao está",
+    // nenhum/nada + verbo → nada funcionou
+    "nenhum deu","nenhum funcionou","nenhum resolveu","nenhum adiantou",
+    "nenhuma funcionou","nada funcionou","nada resolveu","nada adiantou",
+    "nada deu certo","nenhum deu certo",
   ].some(w => msg.includes(w)) || msg.trim() === "nada" || msg.trim() === "nao" || msg.trim() === "não";
 }
 
 function isManualAffirmative(msg) {
   if (isManualNegative(msg)) return false;
+  // Bloqueia frases onde "nenhum/nada" invalida o afirmativo
+  // ex: "nenhum deu certo", "nada funcionou", "nada resolveu"
+  if (/\bnenhum[ao]?\b|\bnada\b/.test(msg)) return false;
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
   if (["foi","deu","conectou","funcionou","resolveu"].includes(msg.trim())) return true;
