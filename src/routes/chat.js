@@ -257,22 +257,8 @@ router.post("/", async (req, res) => {
     }
 
     if (session && now - session.lastInteraction > config.sessionTimeout) {
-      const eraMeio = !["start", "ask_name"].includes(session.step);
-      const nomeAntes = session.name;
-      const ipAntes   = session.ip;
       deleteSession(session_id);
       session = null;
-
-      // Se sessão expirou no meio de um atendimento, reconecta sem pedir nome de novo
-      if (eraMeio) {
-        session = { step: "ask_problem", name: nomeAntes, ip: ipAntes, attempts: 0, lastInteraction: now };
-        saveSession(session_id, session);
-        const nome = nomeAntes ? `, ${nomeAntes}` : "";
-        return res.send(
-          `Oi${nome}! 😊 Sua sessão ficou parada por um tempo e encerrou por inatividade.\n\n` +
-          `Pode me contar de novo o que está acontecendo com o microterminal?`
-        );
-      }
     }
 
     // Só reseta se estiver em ask_name ou final (não no meio do atendimento)
