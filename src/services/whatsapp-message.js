@@ -202,7 +202,15 @@ export async function processMessage(message, chatId, from) {
 
       // Não conseguiu pressionar P a tempo
       if (contemAlgum(msg, ["nao consegui", "não consegui", "passou rapido", "passou rápido", "perdi", "nao deu tempo", "não deu tempo", "nao apareceu", "não apareceu"])) {
-        reply = `Não tem problema! Tenta assim:\n\n1️⃣ Desligue o microterminal\n2️⃣ *Antes de ligar*, posicione o dedo na tecla *P*\n3️⃣ Ligue e pressione o *P imediatamente* — assim que aparecer qualquer coisa na tela\n\nA janela dos pontinhos é bem curta, por isso é importante já estar com o dedo pronto 😊`;
+        reply = (
+          `Não tem problema! Tenta assim:\n\n` +
+          `1️⃣ *Confere se o teclado está plugado* no microterminal antes de ligar\n` +
+          `   _(sem teclado conectado, o P não funciona)_\n` +
+          `2️⃣ Desligue o microterminal\n` +
+          `3️⃣ *Antes de ligar*, posicione o dedo já na tecla *P*\n` +
+          `4️⃣ Ligue e pressione o *P imediatamente* assim que ligar\n\n` +
+          `A janela dos pontinhos é bem rápida — com o dedo já posicionado fica muito mais fácil 😊`
+        );
         break;
       }
 
@@ -439,14 +447,15 @@ function buildConfigMsg(ip, soPassos = false) {
   const intro = soPassos ? "" : `Anotei o IP: *${ip}* 👍\n\n`;
   return (
     `${intro}Agora vamos configurar o microterminal:\n\n` +
-    `1️⃣ *Desligue* o microterminal e *ligue* novamente\n` +
-    `2️⃣ Assim que aparecerem os *pontinhos na tela*, pressione a tecla *P* no teclado\n` +
+    `1️⃣ Certifique-se que o *teclado está conectado* no microterminal\n` +
+    `2️⃣ *Desligue* o microterminal e *ligue* novamente\n` +
+    `3️⃣ Assim que aparecerem os *pontinhos na tela*, pressione a tecla *P*\n` +
     `   _(deixe o dedo já posicionado no P antes de ligar)_\n` +
-    `3️⃣ No menu que aparecer, pressione *1* (IP do servidor)\n` +
-    `4️⃣ Digite o IP: *${ip}*\n` +
-    `5️⃣ Pressione *Enter*\n` +
-    `6️⃣ Pressione *H*\n` +
-    `7️⃣ Pressione *1* para salvar e sair\n\n` +
+    `4️⃣ No menu que aparecer, pressione *1* (IP do servidor)\n` +
+    `5️⃣ Digite o IP: *${ip}*\n` +
+    `6️⃣ Pressione *Enter*\n` +
+    `7️⃣ Pressione *H*\n` +
+    `8️⃣ Pressione *1* para salvar e sair\n\n` +
     `Aguarde — o terminal vai conectar automaticamente 😊\n\nMe avisa como foi!`
   );
 }
