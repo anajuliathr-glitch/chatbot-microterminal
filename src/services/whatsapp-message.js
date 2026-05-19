@@ -4,7 +4,7 @@ import { log } from "./logger.js";
 import { notificarSuporte } from "./zapi.js";
 import { notificarSuporteMeta } from "./meta.js";
 
-const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 180_000;
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 900_000; // 15 min
 
 export async function processMessage(message, chatId, from) {
   log(`[WhatsApp] [${from}] ${message}`);
@@ -14,8 +14,19 @@ export async function processMessage(message, chatId, from) {
 
   if (session && now - session.lastInteraction > SESSION_TIMEOUT) {
     console.log(`⏰ Sessão expirada para ${from}`);
+    const eraMeio = !["start", "ask_name"].includes(session.step);
+    const nomeAntes = session.name;
+    const ipAntes   = session.ip;
     deleteSession(chatId);
     session = null;
+
+    // Se expirou no meio do atendimento, reconecta sem pedir nome de novo
+    if (eraMeio) {
+      session = { step: "ask_problem", name: nomeAntes, ip: ipAntes, attempts: 0, lastInteraction: now };
+      saveSession(chatId, session);
+      const nome = nomeAntes ? `, ${nomeAntes}` : "";
+      return `Oi${nome}! 😊 Sua sessão ficou parada por um tempo e encerrou por inatividade.\n\nPode me contar de novo o que está acontecendo com o microterminal?`;
+    }
   }
 
   const isNew = !session;
