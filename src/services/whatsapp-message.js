@@ -108,6 +108,13 @@ export async function processMessage(message, chatId, from) {
         return `Ahh que bom, ${session.name || ""}! 😄\n\nEntão já está tudo certo 👍\n\nQualquer coisa, é só chamar!`;
       }
 
+      // Quer suporte humano direto, sem nem descrever o problema
+      if (contemAlgum(msg, ["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"])) {
+        session.step = "escalation";
+        reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+        break;
+      }
+
       // Se mensagem muito vaga, pede mais detalhes
       if (msg.length < 5) {
         reply = `Me conta um pouco mais sobre o que está acontecendo 😊\n\nPor exemplo: "o microterminal não conecta na rede" ou "aparece erro na tela"`;

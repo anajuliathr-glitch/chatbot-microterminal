@@ -136,6 +136,9 @@ function isManualAffirmative(msg) {
     "foi la","foi lá","era isso","foi isso","era so","era só",
     "agora apareceu","apareceu o menu","apareceu aqui","abriu o menu",
     "entrou no menu","apareceu a tela","apareceu as opcoes",
+    // variantes de "está conectando / funcionando normalmente"
+    "conectando normalmente","conectou normalmente","esta conectando","está conectando",
+    "ta conectando","tá conectando","subiu","voltou","voltou a funcionar",
   ];
   // Garante que "conectou"/"funcionou" não deem match em "desconectou"/"não funcionou"
   const msgFinal = msg.trim();
@@ -248,6 +251,12 @@ function isVagueProblem(msg) {
     "bugou","bugando","lento","travado","sem sinal",
     "nao responde","não responde","sumiu","nao aparece","não aparece",
     "nao entra","não entra","nao acessa","não acessa",
+    // variantes adicionais
+    "quebrou","quebrando","com erro","deu erro",
+    "nao consigo conectar","nao consigo acessar","nao consigo entrar",
+    "nao esta conectando","nao ta conectando","nao esta funcionando",
+    "problema na rede","problema de rede","sem conexao","sem internet",
+    "fora do ar","fora do sistema","nao sobe",
   ].some(w => msg.includes(w));
 }
 
@@ -393,7 +402,14 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_problem") {
 
+      // Quer suporte humano direto, sem nem descrever o problema
+      if (["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"].some(w => msg.includes(w))) {
+        session.step = "escalation";
+        reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+      }
+
       // Já mandou o IP direto na descrição do problema
+      else {
       const ipNoProblem = extractIP(msg);
       if (ipNoProblem && !wantsToSendAudio(msg) && !wantsToSendPhoto(msg)) {
         session.ip = ipNoProblem;
@@ -455,6 +471,7 @@ router.post("/", async (req, res) => {
           reply = `Entendido! Vamos verificar a configuração 👍\n\nVocê sabe o IP do computador?`;
         }
       }
+      } // fecha else do bloco suporte
     }
 
     // ==========================
@@ -588,8 +605,9 @@ router.post("/", async (req, res) => {
 
       // Novo IP enviado (ou junto com texto, ex: "é 192.168.1.100")
       else if (ipNovoConfig && ipNovoConfig !== session.ip) {
+        const jaTeveIp = !!session.ip; // tinha IP antes? só omite "Anotei" se sim
         session.ip = ipNovoConfig;
-        reply = buildConfigMsg(session.ip, true);
+        reply = buildConfigMsg(session.ip, jaTeveIp);
       }
 
       // Não conseguiu pressionar P a tempo
@@ -673,13 +691,21 @@ router.post("/", async (req, res) => {
     // STEP: ESCALATION
     // ==========================
     else if (session.step === "escalation") {
-      if (await isAffirmative(msg)) {
+      // Palavras que descrevem o estado do problema — não são resposta sim/não ao suporte
+      // ex: "continua igual", "mesma coisa" → tratar como neutro, pedir sim/não de novo
+      const descrevePersistencia = [
+        "continua igual","mesma coisa","mesmo problema","continua o mesmo",
+        "ainda nao resolveu","ainda nao funcionou","ainda com problema",
+        "nao mudou nada","igual ainda",
+      ].some(w => msg.includes(w));
+
+      if (!descrevePersistencia && await isAffirmative(msg)) {
         deleteSession(session_id);
         const contatoMsg = isBusinessHours()
           ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
           : `Como estamos fora do horário agora, um técnico entra em contato assim que estivermos ON (seg-sex 8h-18h) 🛠️`;
         return res.send(`Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\n${contatoMsg}\n\nQualquer dúvida, é só chamar!`);
-      } else if (await isNegative(msg)) {
+      } else if (!descrevePersistencia && await isNegative(msg)) {
         session.step = "config_terminal";
         session.attempts = 1; // dá mais 2 tentativas antes de escalar de novo
         reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo no microterminal agora?`;
