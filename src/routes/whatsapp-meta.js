@@ -81,12 +81,12 @@ async function handleMessage(msg, metadata) {
           const reply = await processMessage(caption, chatId, phone);
           if (reply) await sendMetaMessage(phone, reply);
         } else {
-          await sendMetaMessage(phone, "Recebi sua imagem 📸\n\nPode descrever o que está acontecendo? 😊");
+          await sendMetaMessage(phone, `Recebi sua imagem 📸\n\nSou apenas um Bot e não consigo analisar fotos por enquanto 😊\n\nPode descrever o que aparece na tela? Assim consigo te ajudar!`);
         }
       }
     } catch (e) {
       console.error("Erro imagem Meta:", e.message);
-      await sendMetaMessage(phone, "Recebi sua imagem 📸\n\nPode descrever o problema em texto? 😊");
+      await sendMetaMessage(phone, `Recebi sua imagem 📸\n\nSou apenas um Bot e não consigo analisar fotos por enquanto 😊\n\nPode descrever o que aparece na tela? Assim consigo te ajudar!`);
     }
     return;
   }
@@ -146,6 +146,36 @@ async function handleMessage(msg, metadata) {
       console.error("Erro áudio Meta:", e.message);
       await sendMetaMessage(phone, "Recebi seu áudio 🎙️\n\nTive um problema. Pode digitar? 😊");
     }
+    return;
+  }
+
+  // ── VÍDEO ────────────────────────────────────────────────────────
+  if (msg.type === "video") {
+    await sendMetaMessage(phone, `Recebi seu vídeo 🎥\n\nSou apenas um Bot e não consigo analisar isso por enquanto 😊\n\nPode descrever em texto o que está acontecendo com o microterminal? Assim consigo te ajudar!`);
+    return;
+  }
+
+  // ── DOCUMENTO ────────────────────────────────────────────────────
+  if (msg.type === "document") {
+    await sendMetaMessage(phone, `Recebi seu arquivo 📄\n\nSou apenas um Bot e não consigo abrir documentos por enquanto 😊\n\nPode descrever em texto o que está acontecendo? Assim consigo te ajudar!`);
+    return;
+  }
+
+  // ── STICKER ──────────────────────────────────────────────────────
+  if (msg.type === "sticker") {
+    await sendMetaMessage(phone, `Recebi sua figurinha 😄\n\nSou apenas um Bot, então não consigo reagir direito a isso haha\n\nMe conta o que está acontecendo com o microterminal? 😊`);
+    return;
+  }
+
+  // ── LOCALIZAÇÃO ──────────────────────────────────────────────────
+  if (msg.type === "location") {
+    await sendMetaMessage(phone, `Recebi sua localização 📍\n\nSou apenas um Bot e não consigo usar isso por enquanto 😊\n\nMe conta em texto o que está acontecendo com o microterminal?`);
+    return;
+  }
+
+  // ── CONTATO ──────────────────────────────────────────────────────
+  if (msg.type === "contacts") {
+    await sendMetaMessage(phone, `Recebi um contato 👤\n\nSou apenas um Bot e não consigo usar isso por enquanto 😊\n\nMe conta o que está acontecendo com o microterminal?`);
     return;
   }
 
