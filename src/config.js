@@ -6,7 +6,7 @@ export default {
   anthropicKey: process.env.ANTHROPIC_API_KEY || "",
   anthropicModel: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
   corsOrigin: process.env.CORS_ORIGIN || "*",
-  sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || "900000", 10), // 15 min
+  sessionTimeout: (() => { const v = parseInt(process.env.SESSION_TIMEOUT || "900000", 10); return isNaN(v) ? 900000 : Math.max(60000, v); })(), // 15 min (mín 1 min, NaN-safe)
   nodeEnv: process.env.NODE_ENV || "development",
   whatsappSessionPath: process.env.WHATSAPP_SESSION_PATH || "./whatsapp-session",
   // Z-API (legado — mantido para não quebrar)

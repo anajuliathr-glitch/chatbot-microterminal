@@ -196,6 +196,7 @@ function detectErrorType(msg) {
 
 // 🔥 MONTA MENSAGEM DE CONFIGURAÇÃO COMPLETA (com passo do P)
 function buildConfigMsg(ip, soPassos = false) {
+  if (!ip) return `Ops, não tenho o IP anotado 😕\n\nPode me mandar o IP do computador?`;
   const intro = soPassos ? "" : `Anotei o IP: *${ip}* 👍\n\n`;
   return (
     `${intro}Agora vamos configurar o microterminal:\n\n` +
@@ -299,8 +300,13 @@ async function isNoProblem(msg) {
 
 router.post("/", async (req, res) => {
   try {
-    const { message, session_id, image } = req.body;
+    const { message, session_id, image } = req.body || {};
     if (!message || !session_id) {
+      return res.status(400).send("Faltando dados");
+    }
+
+    // Garante que message é string (previne crashes com arrays/objetos)
+    if (typeof message !== "string") {
       return res.status(400).send("Faltando dados");
     }
 
@@ -317,7 +323,8 @@ router.post("/", async (req, res) => {
       return res.send(`Entendo que você quer me mostrar uma imagem 🖼️\n\nMas aqui pelo chat não dá pra receber imagem dessa forma.\n\nPode descrever o que está acontecendo? 😊`);
     }
 
-    const msg = normalize(message);
+    // Normaliza quebras de linha e espaços múltiplos antes de processar
+    const msg = normalize(message.replace(/[\r\n]+/g, " ").replace(/\s+/g, " "));
 
     if (msg === "reset") {
       deleteSession(session_id);
@@ -389,11 +396,32 @@ router.post("/", async (req, res) => {
         deleteSession(session_id);
         return res.send(`Tudo certo! 😊\n\nSe precisar de ajuda com o microterminal, é só chamar 👍`);
       } else {
-        // Capitaliza o primeiro nome corretamente (ex: "ANA" → "Ana")
-        const primeiroNome = message.trim().split(" ")[0];
-        session.name = primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase();
-        session.step = "ask_problem";
-        reply = `Prazer, ${session.name}! 😊\n\nPode me dizer o que aconteceu?`;
+        // Palavras que não são nomes (para tratar "meu nome é Ana", "me chamo X" etc.)
+        const NAO_NOMES = new Set([
+          "meu","eu","sou","me","minha","nome","chamo","chamar","chama",
+          "oi","ola","opa","bom","boa","sim","nao","ok","e","eh",
+          "pode","de","da","do","um","uma","se","que","por","pra","pro","voce",
+        ]);
+        // Extrai primeiro token que parece um nome (tem pelo menos 1 letra, não é palavra comum)
+        const palavras = message.trim().split(/\s+/);
+        let candidato = "";
+        for (const palavra of palavras) {
+          const limpo     = palavra.replace(/[^a-zA-ZÀ-ÿ]/g, "");
+          // Normaliza acentos para comparar com NAO_NOMES (ex: "é" → "e")
+          const limpoNorm = limpo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+          if (limpo.length >= 1 && !NAO_NOMES.has(limpoNorm)) {
+            candidato = limpo;
+            break;
+          }
+        }
+        // Se não encontrou nenhum candidato válido, pede o nome de novo
+        if (candidato.length < 1) {
+          reply = `Pode me dizer seu nome? 😊`;
+        } else {
+          session.name = candidato.charAt(0).toUpperCase() + candidato.slice(1).toLowerCase();
+          session.step = "ask_problem";
+          reply = `Prazer, ${session.name}! 😊\n\nPode me dizer o que aconteceu?`;
+        }
       }
     }
 
@@ -629,7 +657,7 @@ router.post("/", async (req, res) => {
       }
 
       else if (await isNegative(msg)) {
-        session.attempts++;
+        session.attempts = Math.min((session.attempts || 0) + 1, 99);
 
         if (errorType === "ip") {
           reply = `Confere o IP 👀\n\nPode estar digitado errado. Refaz o processo:\n\n${buildConfigMsg(session.ip, true)}`;
@@ -672,7 +700,7 @@ router.post("/", async (req, res) => {
       else {
         const errorTypeAmbig = detectErrorType(msg);
         if (errorTypeAmbig === "network") {
-          session.attempts++;
+          session.attempts = Math.min((session.attempts || 0) + 1, 99);
           reply = `Parece problema de rede 🌐\n\nO computador não está alcançando o IP *${session.ip || "configurado"}*.\n\nPode ser:\n- IP digitado errado no microterminal\n- Cabo solto ou com defeito\n- WiFi e cabo: certifica que usou o IP do *cabo*\n\nTira o cabo, coloca de novo firme, e tenta de novo 👍`;
         } else if (errorTypeAmbig === "ip") {
           reply = `Confere o IP 👀\n\nTenta digitar novamente *${session.ip || "o IP correto"}* e salvar (H → 1) 👍`;

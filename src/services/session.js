@@ -67,14 +67,17 @@ export function saveSession(id, session) {
   // Persiste no SQLite em background (não bloqueia)
   if (!db) return;
   try {
+    // Campos extras (ex: clarificationAsked) vão para a coluna data como JSON
+    const { step, name, ip, attempts, lastInteraction, ...extras } = session;
+    const dataJson = Object.keys(extras).length ? JSON.stringify(extras) : null;
     insertStmt.run(
       id,
-      session.step || "start",
-      session.name || null,
-      session.ip || null,
-      session.attempts || 0,
-      session.lastInteraction || Date.now(),
-      session.data ? JSON.stringify(session.data) : null
+      step || "start",
+      name || null,
+      ip || null,
+      attempts || 0,
+      lastInteraction || Date.now(),
+      dataJson
     );
   } catch (e) {
     console.error("Erro ao salvar sessão no SQLite:", e.message);

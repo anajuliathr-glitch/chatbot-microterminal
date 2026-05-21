@@ -260,6 +260,43 @@ await t("Sim, está funcionando perfeitamente!",s,"L17","boa");
 await t("Muito obrigada pela ajuda!",s,"L18","nada");
 
 // ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO M — Validação de nome e edge cases extras");
+// ══════════════════════════════════════════════════════
+
+// Número como nome — deve pedir nome de novo
+s=sid(); await t("oi",s,"M01");
+await t("123",s,"M02 número como nome", any("nome","chamar","como"));
+
+// "meu nome é X" — deve extrair X
+s=sid(); await t("oi",s,"M03");
+await t("meu nome é Maria",s,"M04 meu nome é X","Maria");
+
+// "me chamo X" — deve extrair X
+s=sid(); await t("oi",s,"M05");
+await t("me chamo Bruno",s,"M06 me chamo X","Bruno");
+
+// Nome com número misturado — extrai parte letra
+s=sid(); await t("oi",s,"M07");
+await t("Ana123",s,"M08 nome com número","Ana");
+
+// Mensagem com quebra de linha no meio
+s=sid(); await t("oi",s,"M09"); await t("Kika",s,"M10");
+await t("terminal\ncaiu\naqui",s,"M11 quebra de linha no problema", any("ip","conectar","resolver"));
+
+// IP dentro de frase longa com quebra de linha
+s=sid(); await t("oi",s,"M12"); await t("Duda",s,"M13");
+await t("terminal caiu",s,"M14");
+await t("o ip é\n192.168.1.99\ntá aqui",s,"M15 IP com quebra de linha","192.168.1.99");
+
+// Suporte pedido com palavras diferentes
+s=sid(); await t("oi",s,"M16"); await t("Zeca",s,"M17");
+await t("preciso de um atendente humano",s,"M18 atendente no ask_problem","suporte");
+
+// Cliente manda "eu sou Ana" — deve pegar Ana
+s=sid(); await t("oi",s,"M19");
+await t("eu sou Ana",s,"M20 eu sou X","Ana");
+
+// ══════════════════════════════════════════════════════
 console.log("\n\n");
 console.log("═".repeat(55));
 const pct = Math.round(passed/total*100);

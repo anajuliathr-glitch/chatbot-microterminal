@@ -12,6 +12,16 @@ import config from "../config.js";
 
 const router = Router();
 
+// ── Deduplicação de mensagens (evita processar o mesmo webhook 2x) ─
+const processedIds = new Map(); // msgId → timestamp
+function jaProcessou(msgId) {
+  const cutoff = Date.now() - 5 * 60 * 1000; // limpa IDs > 5 min
+  for (const [id, ts] of processedIds) if (ts < cutoff) processedIds.delete(id);
+  if (processedIds.has(msgId)) return true;
+  processedIds.set(msgId, Date.now());
+  return false;
+}
+
 // ── GET: verificação do webhook pela Meta ─────────────────────────
 router.get("/webhook", (req, res) => {
   const mode      = req.query["hub.mode"];
@@ -62,6 +72,12 @@ async function handleMessage(msg, metadata) {
   const phone  = msg.from; // ex: "5511999999999"
   const chatId = `meta_${phone}`;
   const msgId  = msg.id;
+
+  // Ignora webhook duplicado (Meta às vezes reenvia)
+  if (jaProcessou(msgId)) {
+    console.log(`⚠️ Mensagem duplicada ignorada: ${msgId}`);
+    return;
+  }
 
   console.log(`📥 Meta | de:${phone} tipo:${msg.type} id:${msgId}`);
 
@@ -136,8 +152,9 @@ async function handleMessage(msg, metadata) {
         // Inicia o fluxo se for usuário novo, senão pede que digite
         const sessaoExiste = getSession(chatId);
         if (!sessaoExiste) {
-          const reply = await processMessage("__init__", chatId, phone);
-          if (reply) await sendMetaMessage(phone, reply + "\n\n_Recebi um áudio mas não consegui entender. Pode digitar? 😊_");
+          const initReply = await processMessage("__init__", chatId, phone)
+            || `Oi! 😊 Sou a assistente virtual do microterminal da ThR.\n\nQual seu nome?`;
+          await sendMetaMessage(phone, initReply + "\n\n_Recebi um áudio mas não consegui entender. Pode digitar? 😊_");
         } else {
           await sendMetaMessage(phone, "Recebi seu áudio 🎙️\n\nMas não consegui entender. Pode digitar sua mensagem? 😊");
         }
@@ -148,6 +165,9 @@ async function handleMessage(msg, metadata) {
     }
     return;
   }
+
+  // ── REAÇÃO (❤️ etc.) — ignora silenciosamente ────────────────────
+  if (msg.type === "reaction") return;
 
   // ── VÍDEO ────────────────────────────────────────────────────────
   if (msg.type === "video") {
