@@ -214,8 +214,10 @@ function buildConfigMsg(ip, soPassos = false) {
 }
 
 // 🔥 VERIFICA SE ESTÁ NO HORÁRIO DE ATENDIMENTO (seg-sex 8h-18h, fuso Brasília)
+// DATE_OVERRIDE=2024-01-15T10:00:00 permite simular data/hora nos testes
 function isBusinessHours() {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const base = process.env.DATE_OVERRIDE ? new Date(process.env.DATE_OVERRIDE) : new Date();
+  const now  = new Date(base.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const day  = now.getDay();   // 0=Dom, 1=Seg ... 5=Sex, 6=Sáb
   const hour = now.getHours();
   return day >= 1 && day <= 5 && hour >= 8 && hour < 18;
