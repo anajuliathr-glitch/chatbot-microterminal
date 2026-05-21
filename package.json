@@ -3,6 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",
+  "scripts": {
+    "start":         "node server.js",
+    "dev":           "NODE_ENV=development node server.js",
+    "test:swat":     "NODE_ENV=test node test_swat.mjs",
+    "test:sessao":   "NODE_ENV=test node test_sessao.mjs",
+    "test:horario":  "node test_horario.mjs",
+    "test:carga":    "NODE_ENV=test node test_carga.mjs",
+    "test:carga100": "NODE_ENV=test node test_carga.mjs 100"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
     "better-sqlite3": "^12.9.0",

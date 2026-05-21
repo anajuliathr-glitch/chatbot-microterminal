@@ -106,6 +106,11 @@ export function cleanExpiredSessions() {
   } catch {}
 }
 
+/** Retorna cópia de todas as sessões em memória (para o session-watcher) */
+export function getAllSessions() {
+  return new Map(memoryCache);
+}
+
 export function close() {
   try { db?.close(); } catch {}
 }

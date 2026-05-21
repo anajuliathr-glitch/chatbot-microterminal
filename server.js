@@ -5,7 +5,8 @@ import readline from "readline";
 import fetch from "node-fetch";
 import config from "./src/config.js";
 import { loadDocuments } from "./src/services/document.js";
-import { cleanExpiredSessions, close as closeSession } from "./src/services/session.js";
+import { cleanExpiredSessions, close as closeSession, getSession, saveSession, deleteSession } from "./src/services/session.js";
+import { startSessionWatcher } from "./src/services/session-watcher.js";
 import { cleanOldLogs } from "./src/services/logger.js";
 import { getStatus, getQueueSize } from "./src/services/whatsapp-client.js";
 import { isIAConfigured, getIAModel } from "./src/services/ai.js";
@@ -30,6 +31,37 @@ app.use(limiter);
 app.use("/chat", chatRouter);
 app.use("/whatsapp", whatsappRouter);       // Z-API (legado)
 app.use("/whatsapp-meta", whatsappMetaRouter); // Meta Cloud API
+
+// ── Endpoints de teste (só em NODE_ENV=test) ─────────────────────────
+if (process.env.NODE_ENV === "test") {
+  // Seta data simulada para testes de horário comercial
+  app.post("/test/set-date", (req, res) => {
+    const { date } = req.body || {};
+    if (date) process.env.DATE_OVERRIDE = date;
+    else      delete process.env.DATE_OVERRIDE;
+    res.json({ ok: true, DATE_OVERRIDE: process.env.DATE_OVERRIDE || null });
+  });
+
+  // Expira uma sessão para testar o comportamento pós-expiração
+  app.post("/test/expire-session", (req, res) => {
+    const { session_id } = req.body || {};
+    if (!session_id) return res.status(400).json({ error: "Faltando session_id" });
+    const session = getSession(session_id);
+    if (!session) return res.status(404).json({ error: "Sessão não encontrada" });
+    // Retroage o lastInteraction para simular expiração
+    session.lastInteraction = Date.now() - (config.sessionTimeout + 60_000);
+    saveSession(session_id, session);
+    return res.json({ ok: true, expired: true, session_id, step: session.step });
+  });
+
+  // Deleta uma sessão diretamente (útil nos testes)
+  app.post("/test/delete-session", (req, res) => {
+    const { session_id } = req.body || {};
+    if (!session_id) return res.status(400).json({ error: "Faltando session_id" });
+    deleteSession(session_id);
+    return res.json({ ok: true, deleted: true, session_id });
+  });
+}
 
 app.get("/health", (req, res) => {
   res.json({
@@ -59,6 +91,11 @@ async function start() {
   await loadDocuments();
 
   setInterval(cleanExpiredSessions, 30 * 60 * 1000);
+
+  // Watcher de sessões: envia aviso antes de expirar (só em produção/dev)
+  if (process.env.NODE_ENV !== "test") {
+    startSessionWatcher();
+  }
 
   // Limpeza de logs antigos: roda no startup e depois 1x por dia
   cleanOldLogs();
