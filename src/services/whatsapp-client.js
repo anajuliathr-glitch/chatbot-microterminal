@@ -89,17 +89,21 @@ export async function initializeClient() {
     client = null;
   }
 
-  // Tenta achar o Chrome instalado pelo Puppeteer (caminho do Render)
-  const possiveisCaminhos = [
-    "/opt/render/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome",
-    "/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome",
-  ];
-  const fs = await import("fs");
-  const executablePath = possiveisCaminhos.find(p => fs.existsSync(p)) || undefined;
-  if (executablePath) {
-    console.log("🌐 Chrome encontrado em:", executablePath);
-  } else {
-    console.warn("⚠️ Chrome não encontrado nos caminhos conhecidos — usando padrão do Puppeteer");
+  // Localiza o Chrome dinamicamente (funciona no Render independente da versão)
+  let executablePath;
+  try {
+    const { execSync } = await import("child_process");
+    const resultado = execSync(
+      "find /opt/render/.cache/puppeteer -name 'chrome' -type f 2>/dev/null | head -1"
+    ).toString().trim();
+    if (resultado) {
+      executablePath = resultado;
+      console.log("🌐 Chrome encontrado em:", executablePath);
+    } else {
+      console.warn("⚠️ Chrome não encontrado via find — usando padrão do Puppeteer");
+    }
+  } catch {
+    console.warn("⚠️ Erro ao localizar Chrome — usando padrão do Puppeteer");
   }
 
   client = new Client({
