@@ -1,189 +1,169 @@
-import pkg from "whatsapp-web.js";
-import qrcode from "qrcode-terminal";
-import config from "../config.js";
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from "@whiskeysockets/baileys";
 import { processMessage } from "./whatsapp-message.js";
+import { log } from "./logger.js";
+import config from "../config.js";
+import path from "path";
+import pino from "pino";
 
-const { Client, LocalAuth } = pkg;
+const SESSION_PATH = config.whatsappSessionPath || "./whatsapp-session";
 
-const RECONNECT_DELAYS = [5000, 15000, 30000, 60000, 120000];
-const MAX_QUEUE_SIZE = 100;
-
-let client = null;
+let sock = null;
 let qrCodeData = null;
 let connectionStatus = "disconnected";
-let reconnectAttempt = 0;
 let reconnectTimer = null;
-let messageQueue = [];
+let reconnectAttempt = 0;
+const MAX_RECONNECT = 5;
+const RECONNECT_DELAYS = [5000, 15000, 30000, 60000, 120000];
+
+// ── Fila de mensagens (evita race conditions) ─────────────────────
+const messageQueue = [];
 let processingQueue = false;
-
-export function getQRCode() {
-  return qrCodeData;
-}
-
-export function getStatus() {
-  return connectionStatus;
-}
-
-export function getClient() {
-  return client;
-}
-
-export function getQueueSize() {
-  return messageQueue.length;
-}
-
-export async function sendMessage(to, message) {
-  if (!client || connectionStatus !== "connected") {
-    throw new Error("WhatsApp não conectado");
-  }
-  const chatId = to.includes("@c.us") ? to : `${to}@c.us`;
-  await client.sendMessage(chatId, message);
-}
 
 async function processQueue() {
   if (processingQueue || messageQueue.length === 0) return;
   processingQueue = true;
-
   while (messageQueue.length > 0) {
-    const item = messageQueue.shift();
+    const { jid, body } = messageQueue.shift();
     try {
-      const reply = await processMessage(item.messageBody, item.chatId, item.chatId);
-      if (reply && client && connectionStatus === "connected") {
-        await client.sendMessage(item.chatId, reply);
+      const chatId = `baileys_${jid.replace("@s.whatsapp.net", "")}`;
+      const reply = await processMessage(body, chatId, jid);
+      if (reply && sock && connectionStatus === "connected") {
+        await sock.sendMessage(jid, { text: reply });
       }
     } catch (err) {
-      console.error("Erro na fila de mensagens:", err.message);
+      console.error("❌ Erro na fila:", err.message);
     }
   }
-
   processingQueue = false;
 }
 
-function scheduleReconnect() {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
+// ── Exports públicos (mesma interface do cliente anterior) ────────
+
+export function getQRCode()   { return qrCodeData; }
+export function getStatus()   { return connectionStatus; }
+export function getClient()   { return sock; }
+export function getQueueSize(){ return messageQueue.length; }
+
+export async function sendMessage(to, message) {
+  if (!sock || connectionStatus !== "connected") {
+    throw new Error("WhatsApp não conectado");
   }
-
-  if (reconnectAttempt >= RECONNECT_DELAYS.length) {
-    console.error("❌ Número máximo de tentativas de reconexão atingido");
-    connectionStatus = "dead";
-    return;
-  }
-
-  const delay = RECONNECT_DELAYS[reconnectAttempt];
-  console.log(`🔄 Tentando reconectar em ${delay / 1000}s (tentativa ${reconnectAttempt + 1}/${RECONNECT_DELAYS.length})...`);
-  connectionStatus = "reconnecting";
-
-  reconnectTimer = setTimeout(async () => {
-    reconnectAttempt++;
-    await initializeClient();
-  }, delay);
+  const jid = to.includes("@s.whatsapp.net") ? to : `${to}@s.whatsapp.net`;
+  await sock.sendMessage(jid, { text: message });
 }
 
+export async function closeClient() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  if (sock) {
+    try { await sock.logout(); } catch {}
+    sock = null;
+  }
+  connectionStatus = "disconnected";
+  messageQueue.length = 0;
+}
+
+// ── Inicialização principal ───────────────────────────────────────
+
 export async function initializeClient() {
-  if (client) {
-    try {
-      await client.destroy();
-    } catch {}
-    client = null;
-  }
-
-  // Localiza o Chrome dinamicamente (Puppeteer cache + system chromium)
-  let executablePath;
-  try {
-    const { execSync } = await import("child_process");
-    const resultado = execSync(
-      "find /opt/render /root /home -name 'chrome' -o -name 'chromium' -o -name 'chromium-browser' -o -name 'google-chrome' 2>/dev/null | grep -v '\\.py' | head -1"
-    ).toString().trim();
-    if (resultado) {
-      executablePath = resultado;
-      console.log("🌐 Chrome encontrado em:", executablePath);
-    } else {
-      console.warn("⚠️ Chrome não encontrado — usando padrão do Puppeteer");
-    }
-  } catch {
-    console.warn("⚠️ Erro ao localizar Chrome — usando padrão do Puppeteer");
-  }
-
-  client = new Client({
-    authStrategy: new LocalAuth({
-      dataPath: config.whatsappSessionPath,
-    }),
-    puppeteer: {
-      headless: true,
-      executablePath,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-    },
-  });
-
-  client.on("qr", (qr) => {
-    qrCodeData = qr;
-    connectionStatus = "awaiting_qr";
-    reconnectAttempt = 0;
-    qrcode.generate(qr, { small: true });
-    console.log("📱 QR Code gerado. Escaneie com o WhatsApp.");
-  });
-
-  client.on("ready", () => {
-    connectionStatus = "connected";
-    qrCodeData = null;
-    reconnectAttempt = 0;
-    console.log("✅ WhatsApp conectado!");
-    processQueue();
-  });
-
-  client.on("disconnected", (reason) => {
-    connectionStatus = "disconnected";
-    console.log("❌ WhatsApp desconectado:", reason);
-    scheduleReconnect();
-  });
-
-  client.on("auth_failure", (msg) => {
-    connectionStatus = "auth_failure";
-    console.error("❌ Falha de autenticação WhatsApp:", msg);
-    scheduleReconnect();
-  });
-
-  client.on("message", async (msg) => {
-    if (msg.from === "status@broadcast") return;
-    if (msg.isGroup) return;
-
-    const chatId = msg.from;
-    const messageBody = msg.body;
-
-    console.log(`📩 WhatsApp de ${chatId}: ${messageBody}`);
-
-    if (messageQueue.length >= MAX_QUEUE_SIZE) {
-      console.warn("⚠️ Fila de mensagens cheia, descartando mensagem de", chatId);
-      return;
-    }
-
-    messageQueue.push({ chatId, messageBody });
-    processQueue();
-  });
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
 
   try {
-    await client.initialize();
-    console.log("🚀 Inicializando WhatsApp client...");
+    const { state, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
+    const { version } = await fetchLatestBaileysVersion();
+
+    console.log(`🔧 Baileys v${version.join(".")} — inicializando...`);
+
+    sock = makeWASocket({
+      version,
+      auth: state,
+      // Logger silencioso — só erros críticos aparecem no console
+      logger: pino({ level: "silent" }),
+      printQRInTerminal: true,   // QR no log do Render (fallback)
+      browser: ["ThR Bot", "Chrome", "1.0.0"],
+    });
+
+    // ── Credenciais salvas ───────────────────────────────────────
+    sock.ev.on("creds.update", saveCreds);
+
+    // ── Mudança de conexão ───────────────────────────────────────
+    sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
+      if (qr) {
+        qrCodeData = qr;
+        connectionStatus = "awaiting_qr";
+        console.log("📱 QR Code gerado — acesse /whatsapp/qrcode para escanear");
+      }
+
+      if (connection === "open") {
+        connectionStatus = "connected";
+        qrCodeData = null;
+        reconnectAttempt = 0;
+        console.log("✅ WhatsApp (Baileys) conectado!");
+        processQueue();
+      }
+
+      if (connection === "close") {
+        const code = lastDisconnect?.error?.output?.statusCode;
+        const loggedOut = code === DisconnectReason.loggedOut;
+
+        if (loggedOut) {
+          console.log("🚪 Sessão encerrada (logout). Escaneie o QR novamente.");
+          connectionStatus = "disconnected";
+          qrCodeData = null;
+          sock = null;
+          // Aguarda 3s e reinicia para gerar novo QR
+          setTimeout(() => initializeClient(), 3000);
+          return;
+        }
+
+        connectionStatus = "disconnected";
+        console.log(`❌ Desconectado (código ${code}) — tentando reconectar...`);
+        scheduleReconnect();
+      }
+    });
+
+    // ── Mensagens recebidas ──────────────────────────────────────
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
+      if (type !== "notify") return;
+
+      for (const msg of messages) {
+        if (msg.key.fromMe) continue;                    // ignora mensagens do próprio bot
+        if (msg.key.remoteJid === "status@broadcast") continue; // ignora status
+        if (msg.key.remoteJid?.endsWith("@g.us")) continue;     // ignora grupos
+
+        const jid  = msg.key.remoteJid;
+        const body = msg.message?.conversation
+          || msg.message?.extendedTextMessage?.text
+          || msg.message?.imageMessage?.caption
+          || "";
+
+        if (!body.trim()) continue;
+
+        log(`[WhatsApp/Baileys] [${jid}] ${body}`);
+        console.log(`📩 ${jid}: "${body.slice(0, 60)}"`);
+
+        messageQueue.push({ jid, body });
+        processQueue();
+      }
+    });
+
   } catch (err) {
-    console.error("Erro ao inicializar WhatsApp:", err.message);
+    console.error("❌ Erro ao inicializar Baileys:", err.message);
     connectionStatus = "error";
     scheduleReconnect();
   }
 }
 
-export async function closeClient() {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
+function scheduleReconnect() {
+  if (reconnectAttempt >= MAX_RECONNECT) {
+    console.error("❌ Número máximo de tentativas de reconexão atingido");
+    connectionStatus = "dead";
+    return;
   }
-  if (client) {
-    try {
-      await client.destroy();
-    } catch {}
-    client = null;
-    connectionStatus = "disconnected";
-  }
-  messageQueue = [];
+  const delay = RECONNECT_DELAYS[reconnectAttempt] || 120000;
+  console.log(`🔄 Tentando reconectar em ${delay / 1000}s (tentativa ${reconnectAttempt + 1}/${MAX_RECONNECT})...`);
+  connectionStatus = "reconnecting";
+  reconnectTimer = setTimeout(async () => {
+    reconnectAttempt++;
+    await initializeClient();
+  }, delay);
 }
