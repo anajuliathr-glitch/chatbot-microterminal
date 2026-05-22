@@ -417,9 +417,13 @@ router.post("/", async (req, res) => {
     // STEP: ASK_NAME
     // ==========================
     else if (session.step === "ask_name") {
-      // Se mandou só saudação, pede o nome de novo
+      // Se mandou só saudação (inclui variantes com letras repetidas: oiii, olaaaa, oie…)
       const saudacoes = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai"];
-      if (saudacoes.some(s => msg.trim() === s)) {
+      const ehSaudacao = saudacoes.some(s => msg.trim() === s)
+        || /^o+i+e?$/.test(msg.trim())   // oi, oie, oii, oiii…
+        || /^ol+[aá]+$/.test(msg.trim()) // ola, olaa, olá…
+        || /^e+i+$/.test(msg.trim());    // ei, eii…
+      if (ehSaudacao) {
         reply = `Oi! 😄\n\nQual é o seu nome?`;
       } else if (isManualNoProblem(msg)) {
         // "só testando", "já resolvi", "de boa" — não tem problema nenhum
@@ -444,8 +448,12 @@ router.post("/", async (req, res) => {
             break;
           }
         }
-        // Se não encontrou nenhum candidato válido, pede o nome de novo
-        if (candidato.length < 1) {
+        // Valida candidato: precisa ter pelo menos 2 letras E ao menos uma consoante
+        // (rejeita "oaiaooa", "iii", "aaa" — só vogais = não é nome)
+        const temConsoante = /[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]/.test(candidato);
+        const nomeValido   = candidato.length >= 2 && temConsoante;
+
+        if (!nomeValido) {
           reply = `Pode me dizer seu nome? 😊`;
         } else {
           session.name = candidato.charAt(0).toUpperCase() + candidato.slice(1).toLowerCase();
