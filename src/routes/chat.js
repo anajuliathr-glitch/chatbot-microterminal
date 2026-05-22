@@ -437,32 +437,29 @@ router.post("/", async (req, res) => {
           "oi","ola","opa","bom","boa","sim","nao","ok","e","eh",
           "pode","de","da","do","um","uma","se","que","por","pra","pro","voce",
         ]);
-        // Extrai primeiro token que parece um nome (tem pelo menos 1 letra, não é palavra comum)
+        // Testa se uma palavra passa como nome válido
+        function palavraEhNome(limpo) {
+          const n = limpo.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+          const v = (n.match(/[aeiou]/g) || []).length;
+          const c = (n.match(/[bcdfghjklmnpqrstvwxyz]/g) || []).length;
+          const t = n.length;
+          return t >= 3 && t <= 20 && v >= 1 && c >= 1 && (c / t) >= 0.20;
+        }
+
+        // Percorre todas as palavras e pega a PRIMEIRA que passa na validação completa
+        // (não para na primeira palavra que não está em NAO_NOMES — pode ser curta/inválida)
         const palavras = message.trim().split(/\s+/);
         let candidato = "";
         for (const palavra of palavras) {
           const limpo     = palavra.replace(/[^a-zA-ZÀ-ÿ]/g, "");
-          // Normaliza acentos para comparar com NAO_NOMES (ex: "é" → "e")
           const limpoNorm = limpo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-          if (limpo.length >= 1 && !NAO_NOMES.has(limpoNorm)) {
+          if (!NAO_NOMES.has(limpoNorm) && palavraEhNome(limpo)) {
             candidato = limpo;
             break;
           }
         }
-        // Valida candidato como nome real:
-        //  - 2 a 20 caracteres
-        //  - pelo menos 1 vogal e 1 consoante
-        //  - consoantes = pelo menos 20% do total (rejeita "oiaieiaiiaiwiw" com só 1 'w')
-        const cNorm      = candidato.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
-        const nVogais    = (cNorm.match(/[aeiou]/g) || []).length;
-        const nConsoantes= (cNorm.match(/[bcdfghjklmnpqrstvwxyz]/g) || []).length;
-        const total      = cNorm.length;
-        const nomeValido = total >= 2 && total <= 20
-          && nVogais    >= 1
-          && nConsoantes >= 1
-          && (nConsoantes / total) >= 0.20;  // mínimo 20% de consoantes
 
-        if (!nomeValido) {
+        if (!candidato) {
           reply = `Pode me dizer seu nome? 😊`;
         } else {
           session.name = candidato.charAt(0).toUpperCase() + candidato.slice(1).toLowerCase();
@@ -481,8 +478,18 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "ask_problem") {
 
+      // Correção de nome: "meu nome é Ana", "me chamo Ana", "meu nome não é X, é Ana"
+      // Pega o ÚLTIMO nome depois de "é/e" quando a mensagem menciona "nome" ou "chamo"
+      const temContextoNome = msg.includes("nome") || msg.includes("chamo") || msg.includes("me chamo");
+      const todosNomesMsg   = temContextoNome ? [...msg.matchAll(/\be\s+([a-zA-ZÀ-ÿ]{3,20})\b/g)] : [];
+      const nomeCorrigido   = todosNomesMsg.length > 0 ? todosNomesMsg[todosNomesMsg.length - 1][1] : null;
+      if (nomeCorrigido) {
+        session.name = nomeCorrigido.charAt(0).toUpperCase() + nomeCorrigido.slice(1).toLowerCase();
+        reply = `Anotado, ${session.name}! 😊\n\nMe conta o que está acontecendo com o microterminal?`;
+      }
+
       // Quer suporte humano direto, sem nem descrever o problema
-      if (["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"].some(w => msg.includes(w))) {
+      else if (["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"].some(w => msg.includes(w))) {
         session.step = "escalation";
         reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
       }
