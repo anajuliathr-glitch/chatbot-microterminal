@@ -89,18 +89,18 @@ export async function initializeClient() {
     client = null;
   }
 
-  // Localiza o Chrome dinamicamente (funciona no Render independente da versão)
+  // Localiza o Chrome dinamicamente (Puppeteer cache + system chromium)
   let executablePath;
   try {
     const { execSync } = await import("child_process");
     const resultado = execSync(
-      "find /opt/render/.cache/puppeteer -name 'chrome' -type f 2>/dev/null | head -1"
+      "find /opt/render /root /home -name 'chrome' -o -name 'chromium' -o -name 'chromium-browser' -o -name 'google-chrome' 2>/dev/null | grep -v '\\.py' | head -1"
     ).toString().trim();
     if (resultado) {
       executablePath = resultado;
       console.log("🌐 Chrome encontrado em:", executablePath);
     } else {
-      console.warn("⚠️ Chrome não encontrado via find — usando padrão do Puppeteer");
+      console.warn("⚠️ Chrome não encontrado — usando padrão do Puppeteer");
     }
   } catch {
     console.warn("⚠️ Erro ao localizar Chrome — usando padrão do Puppeteer");

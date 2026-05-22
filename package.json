@@ -4,6 +4,7 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
+    "postinstall":   "npx puppeteer browsers install chrome",
     "start":         "node server.js",
     "dev":           "NODE_ENV=development node server.js",
     "test:swat":     "NODE_ENV=test node test_swat.mjs",
