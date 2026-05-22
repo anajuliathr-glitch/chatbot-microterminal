@@ -417,12 +417,13 @@ router.post("/", async (req, res) => {
     // STEP: ASK_NAME
     // ==========================
     else if (session.step === "ask_name") {
-      // Se mandou só saudação (inclui variantes com letras repetidas: oiii, olaaaa, oie…)
+      // Se mandou só saudação (inclui variantes com letras repetidas e typos de teclado)
       const saudacoes = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai"];
       const ehSaudacao = saudacoes.some(s => msg.trim() === s)
-        || /^o+i+e?$/.test(msg.trim())   // oi, oie, oii, oiii…
-        || /^ol+[aá]+$/.test(msg.trim()) // ola, olaa, olá…
-        || /^e+i+$/.test(msg.trim());    // ei, eii…
+        || /^p?o+i+[eu]?$/.test(msg.trim())  // oi, oie, oiii, poi, poii… (P ao lado do O)
+        || /^ol+[aá]+$/.test(msg.trim())      // ola, olaa, olá…
+        || /^e+i+$/.test(msg.trim())          // ei, eii…
+        || /^[oiu][io]+$/.test(msg.trim());   // oio, uio, ioi… sequências de vogais curtas
       if (ehSaudacao) {
         reply = `Oi! 😄\n\nQual é o seu nome?`;
       } else if (isManualNoProblem(msg)) {
@@ -448,10 +449,18 @@ router.post("/", async (req, res) => {
             break;
           }
         }
-        // Valida candidato: precisa ter pelo menos 2 letras E ao menos uma consoante
-        // (rejeita "oaiaooa", "iii", "aaa" — só vogais = não é nome)
-        const temConsoante = /[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]/.test(candidato);
-        const nomeValido   = candidato.length >= 2 && temConsoante;
+        // Valida candidato como nome real:
+        //  - 2 a 20 caracteres
+        //  - pelo menos 1 vogal e 1 consoante
+        //  - consoantes = pelo menos 20% do total (rejeita "oiaieiaiiaiwiw" com só 1 'w')
+        const cNorm      = candidato.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+        const nVogais    = (cNorm.match(/[aeiou]/g) || []).length;
+        const nConsoantes= (cNorm.match(/[bcdfghjklmnpqrstvwxyz]/g) || []).length;
+        const total      = cNorm.length;
+        const nomeValido = total >= 2 && total <= 20
+          && nVogais    >= 1
+          && nConsoantes >= 1
+          && (nConsoantes / total) >= 0.20;  // mínimo 20% de consoantes
 
         if (!nomeValido) {
           reply = `Pode me dizer seu nome? 😊`;
