@@ -6,6 +6,20 @@ import { notificarSuporteMeta } from "./meta.js";
 
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 900_000; // 15 min
 
+// ── Sorteia resposta aleatória (bot mais humano) ──────────────────────
+function pick(...opts) {
+  return opts[Math.floor(Math.random() * opts.length)];
+}
+
+// ── Saudação adequada ao horário de Brasília ─────────────────────────
+function saudacaoHorario() {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const h   = now.getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export async function processMessage(message, chatId, from) {
   log(`[WhatsApp] [${from}] ${message}`);
 
@@ -45,7 +59,11 @@ export async function processMessage(message, chatId, from) {
 
   if (contemAlgum(msg, ["obrigado","obrigada","obg","valeu","tchau","até logo","flw","falou"])) {
     deleteSession(chatId);
-    return "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍";
+    return pick(
+      "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍",
+      "Disponha! 😄\n\nQualquer coisa, é só chamar 👍",
+      "Fico feliz em ter ajudado! 😊\n\nEstou sempre por aqui, é só chamar 👍",
+    );
   }
 
   // ── Usuário confuso / pedindo repetição ──────────────────────────
@@ -69,10 +87,19 @@ export async function processMessage(message, chatId, from) {
     // ── start ────────────────────────────────────────────────────
     case "start": {
       session.step = "ask_name";
+      const s = saudacaoHorario();
       if (isBusinessHours()) {
-        reply = `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
+        reply = pick(
+          `${s}! 😊 Sou a assistente do microterminal da ThR.\n\nQual é o seu nome?`,
+          `${s}! 👋 Aqui é a assistente da ThR — estou aqui pra te ajudar com o microterminal!\n\nPrimeiro, qual é o seu nome?`,
+          `${s}! 😄 Pode me chamar de assistente ThR, cuido do suporte do microterminal.\n\nMe conta seu nome pra começar! 👍`,
+        );
       } else {
-        reply = `${MSG_FORA_HORARIO}Qual seu nome?`;
+        reply = `${MSG_FORA_HORARIO}${pick(
+          `Qual é o seu nome?`,
+          `Me conta seu nome pra começar 😊`,
+          `Qual é o seu nome? 😊`,
+        )}`;
       }
       break;
     }
@@ -86,7 +113,11 @@ export async function processMessage(message, chatId, from) {
       }
       session.name = message.trim().split(" ")[0];
       session.step = "ask_problem";
-      reply = `Prazer, ${session.name}! 😊\n\nPode me contar o que está acontecendo com o microterminal?`;
+      reply = pick(
+        `Prazer, ${session.name}! 😊\n\nPode me contar o que está acontecendo com o microterminal?`,
+        `Olá, ${session.name}! 👋\n\nMe conta o que está rolando com o microterminal?`,
+        `Oi ${session.name}! 😄\n\nO que está acontecendo? Pode me contar!`,
+      );
       break;
     }
 
@@ -112,6 +143,45 @@ export async function processMessage(message, chatId, from) {
       if (contemAlgum(msg, ["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"])) {
         session.step = "escalation";
         reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+        break;
+      }
+
+      // Tela preta
+      if (contemAlgum(msg, ["tela preta","tela apagada","sem imagem","tela nao liga","tela não liga","monitor apagado","nao aparece nada","não aparece nada na tela"])) {
+        session.step = "ask_ip";
+        reply = pick(
+          `Tela preta geralmente tem solução rápida, ${session.name}! 😊\n\n🔌 Primeiro confere:\n• O cabo de vídeo está bem encaixado nos dois lados?\n• O microterminal está ligado na tomada?\n• A TV/monitor está na entrada certa?\n\nSe tudo estiver ok, vamos checar a configuração de rede 👇\n\nVocê sabe o IP do computador?`,
+          `Entendido, ${session.name}! 📺 Tela preta pode ser coisa simples:\n\n1️⃣ Confere o *cabo de vídeo* — tira e recoloca firme\n2️⃣ Verifica se o *microterminal está ligado* na tomada\n3️⃣ Testa a *entrada correta* na TV ou monitor\n\nSe continuar, vamos verificar a rede 👇\n\nVocê tem o IP do computador?`,
+        );
+        break;
+      }
+
+      // Teclado
+      if (contemAlgum(msg, ["teclado nao funciona","teclado não funciona","teclas nao funcionam","teclas não funcionam","nao digita","não digita","teclado nao responde","teclado não responde","teclado travado"])) {
+        reply = pick(
+          `Problema com o teclado tem uma causa muito comum no microterminal, ${session.name}! 😊\n\n⚠️ O teclado *precisa estar conectado ANTES de ligar* o equipamento.\n\nTenta assim:\n1️⃣ *Desligue* o microterminal\n2️⃣ *Pluga o teclado* com a máquina desligada\n3️⃣ *Ligue* novamente\n\nFuncionou? 😊`,
+          `Entendido, ${session.name}! 🖮 O microterminal precisa que o teclado esteja conectado *antes de ligar* — isso é super importante!\n\nFaz assim:\n• *Desliga* o microterminal\n• *Encaixa o teclado* com a máquina desligada\n• *Liga* novamente\n\nMe avisa se funcionou 👍`,
+        );
+        break;
+      }
+
+      // Senha
+      if (contemAlgum(msg, ["senha","password","acesso negado","esqueci a senha","esqueci minha senha","nao lembro a senha","não lembro a senha","usuario e senha","usuário e senha","usuario incorreto","usuário incorreto"])) {
+        session.step = "escalation";
+        reply = pick(
+          `Entendido, ${session.name}! 🔐 Senhas e acessos do microterminal são gerenciados pela equipe da ThR.\n\nVou te colocar na fila de *suporte humano* pra um técnico te ajudar rapidinho.\n\nQuer isso? Responde *sim* ou *não* 😊`,
+          `Senhas são com a equipe da ThR, ${session.name}! 🔑\n\nNão consigo redefinir por aqui, mas posso chamar o suporte agora.\n\nQuer que eu chame? Responde *sim* ou *não* 😊`,
+        );
+        break;
+      }
+
+      // Muito lento
+      if (contemAlgum(msg, ["muito lento","super lento","ficando lento","fica muito lento","extremamente lento"])) {
+        session.step = "ask_ip";
+        reply = pick(
+          `Lentidão no microterminal geralmente é de rede, ${session.name}! 😊\n\nVamos verificar a configuração 👇\n\nVocê sabe o IP do computador?`,
+          `Entendido, ${session.name}! Lentidão pode ser configuração de IP ou problema na rede.\n\nVocê tem o IP do servidor em mãos?`,
+        );
         break;
       }
 
@@ -321,7 +391,11 @@ export async function processMessage(message, chatId, from) {
     case "confirm_done": {
       if (isPositive(msg)) {
         deleteSession(chatId);
-        return `Boa, ${session.name}! 🎉\n\nFuncionou! 😄\n\nQualquer coisa, é só chamar 👍`;
+        return pick(
+          `Boa, ${session.name}! 🎉\n\nFuncionou! 😄\n\nQualquer coisa, é só chamar 👍`,
+          `Que bom, ${session.name}! 🙌\n\nFico feliz que deu certo!\n\nEstou aqui se precisar, é só chamar 😊`,
+          `Arrasou, ${session.name}! 🎊\n\nJá está tudo funcionando!\n\nQualquer coisa, é só chamar 😄`,
+        );
       }
       session.attempts = (session.attempts || 0) + 1;
       if (session.attempts >= 3) {

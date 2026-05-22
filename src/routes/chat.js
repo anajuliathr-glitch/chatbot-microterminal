@@ -6,6 +6,21 @@ import config from "../config.js";
 
 const router = Router();
 
+// ── Sorteia resposta aleatória (bot mais humano) ──────────────────────
+function pick(...opts) {
+  return opts[Math.floor(Math.random() * opts.length)];
+}
+
+// ── Saudação adequada ao horário de Brasília ─────────────────────────
+function saudacaoHorario() {
+  const base = process.env.DATE_OVERRIDE ? new Date(process.env.DATE_OVERRIDE) : new Date();
+  const now  = new Date(base.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const h    = now.getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 function normalize(text) {
   return (text || "")
     .toLowerCase()
@@ -353,7 +368,11 @@ router.post("/", async (req, res) => {
         return res.send("");
       }
       deleteSession(session_id);
-      return res.send(`Por nada 😊\n\nSe precisar, é só chamar! 👍`);
+      return res.send(pick(
+        `Por nada 😊\n\nSe precisar, é só chamar! 👍`,
+        `Por nada! 😄\n\nQualquer coisa, é só chamar 👍`,
+        `Por nada, fico feliz em ter ajudado! 😊\n\nEstou sempre por aqui, é só chamar 👍`,
+      ));
     }
 
     if (session && now - session.lastInteraction > config.sessionTimeout) {
@@ -378,10 +397,19 @@ router.post("/", async (req, res) => {
     // ==========================
     if (session.step === "start") {
       session.step = "ask_name";
+      const s = saudacaoHorario();
       if (isBusinessHours()) {
-        reply = `Oi! 😊 Sou a assistente virtual do microterminal da ThR.\n\nQual seu nome?`;
+        reply = pick(
+          `${s}! 😊 Sou a assistente virtual do microterminal da ThR.\n\nQual seu nome?`,
+          `${s}! 👋 Aqui é a assistente da ThR — estou aqui pra te ajudar com o microterminal!\n\nQual seu nome pra começar?`,
+          `${s}! 😄 Pode me chamar de assistente ThR, sou responsável pelo suporte do microterminal.\n\nQual seu nome? 👍`,
+        );
       } else {
-        reply = `${MSG_FORA_HORARIO}Qual seu nome?`;
+        reply = `${MSG_FORA_HORARIO}${pick(
+          `Qual seu nome?`,
+          `Me conta qual seu nome pra começar 😊`,
+          `Qual seu nome? 😊`,
+        )}`;
       }
     }
 
@@ -422,7 +450,11 @@ router.post("/", async (req, res) => {
         } else {
           session.name = candidato.charAt(0).toUpperCase() + candidato.slice(1).toLowerCase();
           session.step = "ask_problem";
-          reply = `Prazer, ${session.name}! 😊\n\nPode me dizer o que aconteceu?`;
+          reply = pick(
+            `Prazer, ${session.name}! 😊\n\nPode me dizer o que aconteceu?`,
+            `Prazer, ${session.name}! 👋\n\nMe conta o que está rolando com o microterminal?`,
+            `Prazer, ${session.name}! 😄\n\nO que está acontecendo? Pode me contar!`,
+          );
         }
       }
     }
@@ -470,6 +502,41 @@ router.post("/", async (req, res) => {
         // Mantém step em ask_problem até descrever o problema
       }
 
+      // Tela preta / sem imagem
+      else if (["tela preta","tela apagada","sem imagem","tela nao liga","tela não liga","monitor apagado","nao aparece nada","não aparece nada na tela"].some(w => msg.includes(w))) {
+        session.step = "ask_ip";
+        reply = pick(
+          `Tela preta geralmente tem solução rápida, ${session.name}! 😊\n\n🔌 Primeiro confere:\n• O cabo de vídeo está bem encaixado nos dois lados?\n• O microterminal está ligado na tomada?\n• A TV/monitor está na entrada certa?\n\nSe tudo estiver ok e continuar sem imagem, vamos checar a configuração de rede 👇\n\nVocê sabe o IP do computador?`,
+          `Entendido, ${session.name}! 📺 Tela preta pode ser coisa simples:\n\n1️⃣ Confere o *cabo de vídeo* — tira e recoloca firme\n2️⃣ Verifica se o *microterminal está ligado* na tomada\n3️⃣ Testa a *entrada correta* na TV ou monitor\n\nSe continuar, vamos verificar a rede também 👇\n\nVocê tem o IP do computador?`,
+        );
+      }
+
+      // Teclado não funciona
+      else if (["teclado nao funciona","teclado não funciona","teclas nao funcionam","teclas não funcionam","nao digita","não digita","teclado nao responde","teclado não responde","teclado travado"].some(w => msg.includes(w))) {
+        reply = pick(
+          `Problema com o teclado tem uma causa muito comum no microterminal, ${session.name}! 😊\n\n⚠️ O teclado *precisa estar conectado ANTES de ligar* o equipamento.\n\nTenta assim:\n1️⃣ *Desligue* o microterminal\n2️⃣ *Pluga o teclado* com a máquina desligada\n3️⃣ *Ligue* novamente\n\nFuncionou? 😊`,
+          `Entendido, ${session.name}! 🖮 O microterminal precisa que o teclado esteja conectado *antes de ligar* — isso é super importante!\n\nFaz assim:\n• *Desliga* o microterminal\n• *Encaixa o teclado* com a máquina desligada\n• *Liga* novamente\n\nMe avisa se funcionou 👍`,
+        );
+      }
+
+      // Senha / acesso
+      else if (["senha","password","acesso negado","esqueci a senha","esqueci minha senha","nao lembro a senha","não lembro a senha","usuario e senha","usuário e senha","usuario incorreto","usuário incorreto"].some(w => msg.includes(w))) {
+        session.step = "escalation";
+        reply = pick(
+          `Entendido, ${session.name}! 🔐 Senhas e acessos do microterminal são gerenciados pela equipe da ThR.\n\nVou te colocar na fila de *suporte humano* pra um técnico te ajudar rapidinho.\n\nQuer isso? Responde *sim* ou *não* 😊`,
+          `Senhas são com a equipe da ThR, ${session.name}! 🔑\n\nNão consigo redefinir por aqui, mas posso chamar o suporte agora.\n\nQuer que eu chame? Responde *sim* ou *não* 😊`,
+        );
+      }
+
+      // Terminal muito lento
+      else if (["muito lento","super lento","ficando lento","fica muito lento","extremamente lento"].some(w => msg.includes(w))) {
+        session.step = "ask_ip";
+        reply = pick(
+          `Lentidão no microterminal geralmente é de rede, ${session.name}! 😊\n\nVamos verificar a configuração 👇\n\nVocê sabe o IP do computador?`,
+          `Entendido, ${session.name}! Lentidão pode ser configuração de IP ou problema na rede.\n\nVocê tem o IP do servidor em mãos?`,
+        );
+      }
+
       // Problema vago mas reconhecível — vai direto pro IP
       else if (isVagueProblem(msg)) {
         session.step = "ask_ip";
@@ -510,7 +577,11 @@ router.post("/", async (req, res) => {
     else if (session.step === "rag_followup") {
       if (await isAffirmative(msg)) {
         deleteSession(session_id);
-        return res.send(`Boa ${session.name}! 🎉\n\nFico feliz que ajudou 😄\n\nQualquer coisa, chama 👍`);
+        return res.send(pick(
+          `Boa ${session.name}! 🎉\n\nFico feliz que ajudou 😄\n\nQualquer coisa, é só chamar 👍`,
+          `Que ótimo, ${session.name}! 🙌\n\nFico feliz que resolveu!\n\nEstou aqui sempre que precisar, é só chamar 😊`,
+          `Arrasou, ${session.name}! 🎊\n\nProblema resolvido! 😄\n\nQualquer dúvida, é só chamar 👍`,
+        ));
       } else if (await isNegative(msg)) {
         session.step = "ask_ip";
         reply = `Entendido, vamos verificar mais a fundo 👇\n\nVocê sabe o IP do computador?`;
@@ -750,7 +821,11 @@ router.post("/", async (req, res) => {
     else if (session.step === "confirm_done") {
       if (await isAffirmative(msg)) {
         session.step = "final";
-        reply = `Boa ${session.name}! 🎉\n\nFuncionou 😄\n\nQualquer coisa, chama 👍`;
+        reply = pick(
+          `Boa ${session.name}! 🎉\n\nFuncionou 😄\n\nQualquer coisa, chama 👍`,
+          `Boa ${session.name}! 🙌\n\nFico feliz que deu certo!\n\nEstou aqui se precisar, é só chamar 😊`,
+          `Boa ${session.name}! 🎊\n\nJá está tudo funcionando!\n\nQualquer coisa, é só chamar 😄`,
+        );
       } else if (await isNegative(msg)) {
         session.step = "config_terminal";
         reply = `Beleza, então vamos continuar 👇\n\nO que ainda está acontecendo?`;
@@ -764,7 +839,11 @@ router.post("/", async (req, res) => {
     // ==========================
     else if (session.step === "final") {
       deleteSession(session_id);
-      return res.send(`Por nada 😊\n\nSe precisar, é só chamar! 👍`);
+      return res.send(pick(
+        `Por nada 😊\n\nSe precisar, é só chamar! 👍`,
+        `Por nada! 😄\n\nQualquer coisa, é só chamar 👍`,
+        `Por nada, fico feliz em ter ajudado! 😊\n\nEstou sempre por aqui, é só chamar 👍`,
+      ));
     }
 
     else if (await isNeutral(msg)) {
