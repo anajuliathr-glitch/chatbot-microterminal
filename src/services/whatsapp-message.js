@@ -303,8 +303,22 @@ export async function processMessage(message, chatId, from) {
         session.attempts = 0;
         session.step = "config_terminal";
         reply = buildConfigMsg(session.ip);
-      } else if (contemAlgum(msg, ["não consigo","nao consigo","não aparece","nao aparece","nao tenho","não tenho","nao encontro","não encontro","sem acesso","nao sei","não sei","passo a passo","me ensina","como acho","como encontro","como faco","como faço","nao sei como","não sei como"])) {
-        reply = `Tudo bem! Tenta assim 👇\n\n1️⃣ Pressiona *Windows + R*\n2️⃣ Digita *cmd* e Enter\n3️⃣ Digita *ipconfig* e Enter\n4️⃣ Procura *Endereço IPv4*\n\nO número vai ter esse formato: *192.168.x.x*\n\nMe manda quando encontrar 😊`;
+      } else if (isNegative(msg) || contemAlgum(msg, [
+        "nao consigo","não consigo","nao achei","não achei","nao encontrei","não encontrei",
+        "nao aparece","não aparece","nao tenho","não tenho","nao encontro","não encontro",
+        "sem acesso","nao sei","não sei","nada","nao vi","não vi","nao to vendo","não to vendo",
+        "passo a passo","me ensina","como acho","como encontro","como faco","como faço",
+        "nao sei como","não sei como","nao apareceu","não apareceu","nao acho","não acho",
+      ])) {
+        session.attempts = (session.attempts || 0) + 1;
+        if (session.attempts === 1) {
+          reply = `Tudo bem! Tenta assim 👇\n\n1️⃣ Pressiona *Windows + R*\n2️⃣ Digita *cmd* e Enter\n3️⃣ Digita *ipconfig* e Enter\n4️⃣ Procura *Endereço IPv4*\n\nO número vai ter esse formato: *192.168.x.x*\n\nMe manda quando encontrar 😊`;
+        } else if (session.attempts === 2) {
+          reply = `Tá difícil de achar? Sem problema 😊\n\nMe conta o que aparece na tela quando você abre o cmd e digita *ipconfig* — descreve o que você vê que eu te ajudo a identificar o número certo 👍`;
+        } else {
+          session.step = "escalation";
+          reply = `Entendo que tá difícil encontrar o IP 😕\n\nPosso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato e te ajuda remotamente a localizar tudo 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+        }
       } else {
         reply = `Preciso do IP para continuar 😊\n\nÉ um número assim: *192.168.x.x*\n\nEstá conseguindo encontrar? Se quiser, posso te guiar passo a passo 👍`;
       }
@@ -476,33 +490,85 @@ function normalizar(text) {
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .trim()
 
+    // ── pontuação que atrapalha o matching ───────────────────────
+    .replace(/[.!?]+$/, "")          // remove pontuação no final ("Nada." → "Nada")
+    .replace(/\.\.\./g, " ")         // reticências → espaço
+
     // ── abreviações e gírias ──────────────────────────────────────
     .replace(/\bnaum\b/g, "nao")
+    .replace(/\bnaon\b/g, "nao")
+    .replace(/\bnaoo\b/g, "nao")
     .replace(/\bvc\b/g, "voce")
+    .replace(/\bvcs\b/g, "voces")
     .replace(/\boq\b/g, "o que")
+    .replace(/\boquê\b/g, "o que")
     .replace(/\bpq\b/g, "porque")
+    .replace(/\bpqp\b/g, "")
     .replace(/\bmt\b/g, "muito")
+    .replace(/\bmto\b/g, "muito")
     .replace(/\btb\b/g, "tambem")
+    .replace(/\btbm\b/g, "tambem")
     .replace(/\bmsm\b/g, "mesmo")
     .replace(/\baki\b/g, "aqui")
     .replace(/\bnop+\b/g, "nao")
+    .replace(/\bblz\b/g, "beleza")
+    .replace(/\bflw\b/g, "falou")
+    .replace(/\bvlw\b/g, "valeu")
+    .replace(/\bobg\b/g, "obrigado")
+    .replace(/\bkd\b/g, "cadê")
+    .replace(/\bfds\b/g, "fim de semana")
+    .replace(/\btá\b/g, "ta")
+    .replace(/\bto\b/g, "estou")
+    .replace(/\btô\b/g, "estou")
+
+    // ── typos de "não" ────────────────────────────────────────────
+    .replace(/\bn[aã]o\b/g, "nao")
+    .replace(/\bnao\b/g, "nao")
 
     // ── typos de "sim" ────────────────────────────────────────────
     .replace(/\bso+m\b/g, "sim")
     .replace(/\bsi+m+\b/g, "sim")
     .replace(/\bsi\b/g, "sim")
     .replace(/\bsium\b/g, "sim")
+    .replace(/\bxim\b/g, "sim")
 
     // ── typos de "ainda" ─────────────────────────────────────────
     .replace(/\baind[sa]?\b/g, "ainda")
 
-    // ── microterminal ─────────────────────────────────────────────
+    // ── typos de "conectar/conexão" ──────────────────────────────
+    .replace(/\bconef[a-z]+\b/g, "nao conecta")   // conefay, conefou etc
+    .replace(/\bconeta[a-z]*\b/g, "conecta")
+    .replace(/\bkoneta[a-z]*\b/g, "conecta")
+    .replace(/\bkonect[a-z]*\b/g, "conecta")
+    .replace(/\bconect[ao]u\b/g, "conectou")
+    .replace(/\bconetou\b/g, "conectou")
+    .replace(/\bconectô\b/g, "conectou")
+    .replace(/\bconexaum\b/g, "conexao")
+    .replace(/\bkonexao\b/g, "conexao")
+    .replace(/\bconetar\b/g, "conectar")
+    .replace(/\bdesconet[a-z]+\b/g, "desconectou")
+    .replace(/\bdesconect[a-z]+\b/g, "desconectou")
+
+    // ── typos de "funcionar" ──────────────────────────────────────
+    .replace(/\bfuncion[ao]u\b/g, "funcionou")
+    .replace(/\bfuncionô\b/g, "funcionou")
+    .replace(/\bfuncion[ao]\b/g, "funciona")
+    .replace(/\bfuncioa\b/g, "funciona")
+    .replace(/\bfuncionay\b/g, "funciona")
+    .replace(/\bfunçiona\b/g, "funciona")
+    .replace(/\bfunco\b/g, "funciona")
+
+    // ── typos de "microterminal" ──────────────────────────────────
     .replace(/\bmicro\s+terminal\b/g, "microterminal")
     .replace(/\bmicroterminau\b/g, "microterminal")
     .replace(/\bmictroterminal\b/g, "microterminal")
     .replace(/\bmircoterminal\b/g, "microterminal")
     .replace(/\bmicrotermianl\b/g, "microterminal")
     .replace(/\bmicrotermial\b/g, "microterminal")
+    .replace(/\bmicrotermina[l1]\b/g, "microterminal")
+    .replace(/\bmicroterinal\b/g, "microterminal")
+    .replace(/\bmicrotermino\b/g, "microterminal")
+    .replace(/\bmicro\b/g, "microterminal")
 
     // ── terminações "au" no lugar de "ou"/"al" ────────────────────
     .replace(/\bterminau\b/g, "terminal")
@@ -513,17 +579,56 @@ function normalizar(text) {
     .replace(/\bsalvau\b/g, "salvou")
     .replace(/\btravau\b/g, "travou")
     .replace(/\berradu\b/g, "errado")
+    .replace(/\btadu\b/g, "tado")
+    .replace(/\bapareceu\b/g, "apareceu")
 
     // ── typos de "problema" ───────────────────────────────────────
     .replace(/\bpoblema\b/g, "problema")
     .replace(/\bporblema\b/g, "problema")
     .replace(/\bproblemon\b/g, "problema")
+    .replace(/\bprobrlema\b/g, "problema")
+    .replace(/\bprobema\b/g, "problema")
+    .replace(/\bploblema\b/g, "problema")
+    .replace(/\bproblemao\b/g, "problema")
+
+    // ── typos de "não aparece / não acha" ────────────────────────
+    .replace(/\bnapareceu\b/g, "nao apareceu")
+    .replace(/\bnaparece\b/g, "nao aparece")
 
     // ── typos de "configurar/pressionar" ─────────────────────────
     .replace(/\bcofigurar\b/g, "configurar")
     .replace(/\bconfigurau\b/g, "configurou")
+    .replace(/\bconfigurô\b/g, "configurou")
+    .replace(/\bconfigurou\b/g, "configurou")
     .replace(/\bprecionar\b/g, "pressionar")
-    .replace(/\bprecionei\b/g, "pressionei");
+    .replace(/\bprecionei\b/g, "pressionei")
+    .replace(/\bpressionau\b/g, "pressionou")
+    .replace(/\bpresionei\b/g, "pressionei")
+
+    // ── typos de "salvar" ─────────────────────────────────────────
+    .replace(/\bsarvei\b/g, "salvei")
+    .replace(/\bsarvou\b/g, "salvou")
+    .replace(/\bsarvei\b/g, "salvei")
+
+    // ── typos de "ligar/desligar" ─────────────────────────────────
+    .replace(/\bdesliga\b/g, "desligue")
+    .replace(/\bdesligô\b/g, "desligou")
+    .replace(/\bligô\b/g, "ligou")
+
+    // ── typos de "teclado" ────────────────────────────────────────
+    .replace(/\btecladu\b/g, "teclado")
+    .replace(/\btecaldo\b/g, "teclado")
+    .replace(/\btecado\b/g, "teclado")
+
+    // ── typos de "cabo" ───────────────────────────────────────────
+    .replace(/\bcabu\b/g, "cabo")
+    .replace(/\bcab[oô]\b/g, "cabo")
+
+    // ── typos de "achei/encontrei" ────────────────────────────────
+    .replace(/\bachei\b/g, "achei")
+    .replace(/\bachô\b/g, "achou")
+    .replace(/\bencontrei\b/g, "encontrei")
+    .replace(/\bencontrô\b/g, "encontrou");
 }
 
 /** Verifica se a mensagem contém pelo menos uma das palavras/frases */
