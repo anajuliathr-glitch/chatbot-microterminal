@@ -106,24 +106,39 @@ export async function processMessage(message, chatId, from) {
 
     // ── ask_name ─────────────────────────────────────────────────
     case "ask_name": {
-      // Se mandou só saudação, pede o nome de novo
-      if (contemAlgum(msg, ["oi","olá","ola","bom dia","boa tarde","boa noite","hey","hi"]) && msg.split(" ").length <= 2) {
+      // Se mandou só saudação (inclui variantes com letras repetidas e typos de teclado)
+      const saudacoes = ["oi","olá","ola","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai"];
+      const ehSaudacao = saudacoes.some(s => msg.trim() === s)
+        || /^p?o+i+[eu]?$/.test(msg.trim())  // oi, oie, oiii, poi, poii… (P ao lado do O)
+        || /^ol+[aá]+$/.test(msg.trim())      // ola, olaa, olá…
+        || /^e+i+$/.test(msg.trim())          // ei, eii…
+        || /^[oiu][io]+$/.test(msg.trim());   // oio, uio, ioi… sequências de vogais curtas
+      if (ehSaudacao) {
         reply = `Oi! 😄\n\nQual é o seu nome?`;
         break;
       }
-      session.name = message.trim().split(" ")[0];
-      session.step = "ask_problem";
-      reply = pick(
-        `Prazer, ${session.name}! 😊\n\nPode me contar o que está acontecendo com o microterminal?`,
-        `Olá, ${session.name}! 👋\n\nMe conta o que está rolando com o microterminal?`,
-        `Oi ${session.name}! 😄\n\nO que está acontecendo? Pode me contar!`,
-      );
+
+      // Extrai o primeiro nome válido da mensagem (usa message original, não normalizada)
+      const nomeAsk = extrairNome(message);
+      if (!nomeAsk) {
+        reply = `Pode me dizer seu nome? 😊`;
+      } else {
+        session.name = nomeAsk;
+        session.step = "ask_problem";
+        reply = pick(
+          `Prazer, ${session.name}! 😊\n\nPode me contar o que está acontecendo com o microterminal?`,
+          `Olá, ${session.name}! 👋\n\nMe conta o que está rolando com o microterminal?`,
+          `Oi ${session.name}! 😄\n\nO que está acontecendo? Pode me contar!`,
+        );
+      }
       break;
     }
 
     // ── ask_name_then_problem ────────────────────────────────────
     case "ask_name_then_problem": {
-      session.name = message.trim().split(" ")[0];
+      // Extrai nome com validação completa (evita "oiii", "pi", typos de teclado)
+      const nomeAtp = extrairNome(message);
+      if (nomeAtp) session.name = nomeAtp;
       const problema = session.pendingProblem || "";
       session.pendingProblem = null;
       session.step = "ask_problem";
@@ -134,6 +149,17 @@ export async function processMessage(message, chatId, from) {
 
     // ── ask_problem ───────────────────────────────────────────────
     case "ask_problem": {
+      // Correção de nome: "meu nome é Ana", "me chamo Ana", "meu nome não é X, é Ana"
+      // Pega o ÚLTIMO nome depois de "é/e" quando a mensagem menciona "nome" ou "chamo"
+      const temContextoNome = msg.includes("nome") || msg.includes("chamo") || msg.includes("me chamo");
+      const todosNomesMsg   = temContextoNome ? [...msg.matchAll(/\be\s+([a-zA-ZÀ-ÿ]{3,20})\b/g)] : [];
+      const nomeCorrigido   = todosNomesMsg.length > 0 ? todosNomesMsg[todosNomesMsg.length - 1][1] : null;
+      if (nomeCorrigido) {
+        session.name = nomeCorrigido.charAt(0).toUpperCase() + nomeCorrigido.slice(1).toLowerCase();
+        reply = `Anotado, ${session.name}! 😊\n\nMe conta o que está acontecendo com o microterminal?`;
+        break;
+      }
+
       if (contemAlgum(msg, ["nada","de boa","tranquilo","testando","resolvido","tudo bem","tá bem","ta bem"])) {
         deleteSession(chatId);
         return `Ahh que bom, ${session.name || ""}! 😄\n\nEntão já está tudo certo 👍\n\nQualquer coisa, é só chamar!`;
@@ -251,9 +277,15 @@ export async function processMessage(message, chatId, from) {
 
       session.step = "teach_ip";
 
+      // "sei" sozinho = sabe o IP | "sei nada/lá/não/não sei" = não sabe
+      const seiPositivo = msg.includes("sei") &&
+        !msg.includes("sei nada") && !msg.includes("sei la") &&
+        !msg.includes("sei nao") && !msg.includes("sei não") &&
+        !msg.includes("nao sei") && !msg.includes("não sei");
+
       if (isNegative(msg) || contemAlgum(msg, ["sei não","nao sei","não sei","nao tenho","não tenho","nao lembro","não lembro","sem acesso","nao tenho acesso"])) {
         reply = instrucaoIP();
-      } else if (contemAlgum(msg, ["sei","tenho","sei sim","tenho sim","lembro"])) {
+      } else if (seiPositivo || contemAlgum(msg, ["tenho","sei sim","tenho sim","lembro"])) {
         reply = `Ótimo! Me manda o IP então 😊`;
       } else {
         // Resposta ambígua — repete a pergunta com mais contexto
@@ -573,6 +605,48 @@ function buildConfigMsg(ip, soPassos = false) {
     `8️⃣ Pressione *1* para salvar e sair\n\n` +
     `Aguarde — o terminal vai conectar automaticamente 😊\n\nMe avisa como foi!`
   );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Validação de nomes
+// ────────────────────────────────────────────────────────────────────
+
+/** Palavras que jamais devem ser aceitas como nome */
+const NAO_NOMES = new Set([
+  "meu","eu","sou","me","minha","nome","chamo","chamar","chama",
+  "oi","ola","opa","bom","boa","sim","nao","ok","e","eh",
+  "pode","de","da","do","um","uma","se","que","por","pra","pro","voce",
+]);
+
+/**
+ * Retorna true se a palavra parece um nome real:
+ * – mínimo 3 letras, máximo 20
+ * – pelo menos 1 vogal E 1 consoante
+ * – proporção de consoantes ≥ 20% (evita "oaiaooa", "iiii" etc.)
+ */
+function palavraEhNome(limpo) {
+  const n = limpo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const v = (n.match(/[aeiou]/g) || []).length;
+  const c = (n.match(/[bcdfghjklmnpqrstvwxyz]/g) || []).length;
+  const t = n.length;
+  return t >= 3 && t <= 20 && v >= 1 && c >= 1 && (c / t) >= 0.20;
+}
+
+/**
+ * Percorre as palavras da mensagem original e retorna o primeiro
+ * candidato a nome que passa pela validação completa.
+ * Usa a mensagem ORIGINAL (não normalizada) para preservar maiúsculas/acentos.
+ */
+function extrairNome(messageOriginal) {
+  const palavras = messageOriginal.trim().split(/\s+/);
+  for (const palavra of palavras) {
+    const limpo     = palavra.replace(/[^a-zA-ZÀ-ÿ]/g, "");
+    const limpoNorm = limpo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    if (!NAO_NOMES.has(limpoNorm) && palavraEhNome(limpo)) {
+      return limpo.charAt(0).toUpperCase() + limpo.slice(1).toLowerCase();
+    }
+  }
+  return null;
 }
 
 /** Repete a instrução do passo atual quando usuário parece confuso */
