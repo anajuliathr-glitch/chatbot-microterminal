@@ -615,6 +615,11 @@ router.post("/", async (req, res) => {
       // IP direto (ou embutido no texto)
       else {
         const ipDiretoAsk = extractIP(msg);
+        // "sei" sozinho = sabe | "sei nada/lá/não/não sei" = não sabe
+        const seiPositivo = msg.includes("sei") &&
+          !msg.includes("sei nada") && !msg.includes("sei la") &&
+          !msg.includes("sei nao") && !msg.includes("sei não") &&
+          !msg.includes("nao sei") && !msg.includes("não sei");
         if (ipDiretoAsk) {
           session.ip = ipDiretoAsk;
           session.attempts = 0;
@@ -622,7 +627,7 @@ router.post("/", async (req, res) => {
           reply = buildConfigMsg(session.ip);
         }
         // Sabe o IP mas não mandou ainda
-        else if (await isAffirmative(msg) || (!await isNegative(msg) && (msg.includes("sei") || msg.includes("tenho") || msg.includes("aqui")))) {
+        else if (await isAffirmative(msg) || (!await isNegative(msg) && (seiPositivo || msg.includes("tenho") || msg.includes("aqui")))) {
           session.step = "teach_ip";
           reply = `Ótimo! Pode me mandar o IP 😊`;
         }
