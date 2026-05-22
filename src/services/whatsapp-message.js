@@ -303,7 +303,7 @@ export async function processMessage(message, chatId, from) {
         session.attempts = 0;
         session.step = "config_terminal";
         reply = buildConfigMsg(session.ip);
-      } else if (contemAlgum(msg, ["não consigo","nao consigo","não aparece","nao aparece","nao tenho","não tenho","nao encontro","não encontro","sem acesso","nao sei","não sei"])) {
+      } else if (contemAlgum(msg, ["não consigo","nao consigo","não aparece","nao aparece","nao tenho","não tenho","nao encontro","não encontro","sem acesso","nao sei","não sei","passo a passo","me ensina","como acho","como encontro","como faco","como faço","nao sei como","não sei como"])) {
         reply = `Tudo bem! Tenta assim 👇\n\n1️⃣ Pressiona *Windows + R*\n2️⃣ Digita *cmd* e Enter\n3️⃣ Digita *ipconfig* e Enter\n4️⃣ Procura *Endereço IPv4*\n\nO número vai ter esse formato: *192.168.x.x*\n\nMe manda quando encontrar 😊`;
       } else {
         reply = `Preciso do IP para continuar 😊\n\nÉ um número assim: *192.168.x.x*\n\nEstá conseguindo encontrar? Se quiser, posso te guiar passo a passo 👍`;
