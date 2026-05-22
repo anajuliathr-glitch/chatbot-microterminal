@@ -8,7 +8,7 @@ import { loadDocuments } from "./src/services/document.js";
 import { cleanExpiredSessions, close as closeSession, getSession, saveSession, deleteSession } from "./src/services/session.js";
 import { startSessionWatcher } from "./src/services/session-watcher.js";
 import { cleanOldLogs } from "./src/services/logger.js";
-import { getStatus, getQueueSize } from "./src/services/whatsapp-client.js";
+import { getStatus, getQueueSize, initializeClient } from "./src/services/whatsapp-client.js";
 import { isIAConfigured, getIAModel } from "./src/services/ai.js";
 import chatRouter from "./src/routes/chat.js";
 import whatsappRouter from "./src/routes/whatsapp.js";
@@ -95,6 +95,8 @@ async function start() {
   // Watcher de sessões: envia aviso antes de expirar (só em produção/dev)
   if (process.env.NODE_ENV !== "test") {
     startSessionWatcher();
+    // Inicia cliente WhatsApp (whatsapp-web.js) — gera QR code pra escanear
+    initializeClient().catch(err => console.error("Erro ao iniciar WhatsApp client:", err.message));
   }
 
   // Limpeza de logs antigos: roda no startup e depois 1x por dia

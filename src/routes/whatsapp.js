@@ -5,6 +5,7 @@ import { analisarImagem } from "../services/ai.js";
 import { transcribeAudio } from "../services/transcription.js";
 import { getSession } from "../services/session.js";
 import { isEcho } from "../services/sent-tracker.js";
+import { getQRCode, getStatus } from "../services/whatsapp-client.js";
 import config from "../config.js";
 
 const router = Router();
@@ -160,10 +161,47 @@ router.post("/webhook", async (req, res) => {
 router.get("/status", (req, res) => {
   res.json({
     status: "online",
+    whatsapp: getStatus(),
     zapi: config.zapiInstance ? "configurado" : "nao configurado",
     transcricao: config.openaiKey ? "ativa" : "inativa",
     suporte: config.supportPhone ? "configurado" : "nao configurado",
   });
+});
+
+// ── QR Code para escanear com o WhatsApp ────────────────────────────
+router.get("/qrcode", (req, res) => {
+  const status = getStatus();
+
+  if (status === "connected") {
+    return res.send(`
+      <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+        <h2>✅ WhatsApp já está conectado!</h2>
+        <p>O bot está online e pronto pra atender.</p>
+      </body></html>
+    `);
+  }
+
+  const qr = getQRCode();
+  if (!qr) {
+    return res.send(`
+      <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+        <h2>⏳ Aguardando QR Code...</h2>
+        <p>O servidor ainda está inicializando. Aguarde alguns segundos e <a href="/whatsapp/qrcode">atualize a página</a>.</p>
+        <p>Status atual: <strong>${status}</strong></p>
+      </body></html>
+    `);
+  }
+
+  // Exibe QR code usando API externa (sem precisar de pacote extra)
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+  res.send(`
+    <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+      <h2>📱 Escaneie com o WhatsApp</h2>
+      <p>Abra o WhatsApp → <strong>Aparelhos conectados</strong> → <strong>Conectar aparelho</strong></p>
+      <img src="${qrUrl}" style="margin:20px auto;display:block;border:1px solid #ccc;padding:10px;border-radius:8px"/>
+      <p style="color:#888">O QR code expira em 20 segundos — se não funcionar, <a href="/whatsapp/qrcode">atualize a página</a></p>
+    </body></html>
+  `);
 });
 
 export default router;
