@@ -12,8 +12,8 @@ let qrCodeData = null;
 let connectionStatus = "disconnected";
 let reconnectTimer = null;
 let reconnectAttempt = 0;
-const MAX_RECONNECT = 5;
-const RECONNECT_DELAYS = [5000, 15000, 30000, 60000, 120000];
+const MAX_RECONNECT = 20;
+const RECONNECT_DELAYS = [5000, 10000, 15000, 30000, 60000, 120000];
 
 // ── Fila de mensagens (evita race conditions) ─────────────────────
 const messageQueue = [];
