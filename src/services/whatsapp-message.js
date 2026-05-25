@@ -67,7 +67,8 @@ export async function processMessage(message, chatId, from) {
   }
 
   // ── Usuário confuso / pedindo repetição ──────────────────────────
-  if (contemAlgum(msg, ["?","oi?","hein","como assim","não entendi","nao entendi","que","oque","o que","kk","kkk"])) {
+  if (contemAlgum(msg, ["?","oi?","hein","como assim","não entendi","nao entendi","oque","o que","kk","kkk"])
+      || msg === "que" || msg === "q") {
     return repetirPasso(session);
   }
 
@@ -211,6 +212,27 @@ export async function processMessage(message, chatId, from) {
         break;
       }
 
+      // Não conecta / sem rede / sem conexão
+      if (contemAlgum(msg, [
+        "nao conecta","não conecta","nao esta conectando","não está conectando","nao to conectando","não to conectando",
+        "sem conexao","sem conexão","sem rede","sem internet","sem acesso",
+        "nao acessa","não acessa","nao abre","não abre",
+        "nao funciona","não funciona","parou de funcionar","parou de conectar",
+        "caiu a conexao","caiu a conexão","caiu o acesso","perdeu conexao","perdeu conexão",
+        "nao carrega","não carrega","fica carregando","nao entra","não entra",
+        "erro de conexao","erro de conexão","sem sinal de rede",
+        "desconectou","desconectado","ficou sem conexao","ficou sem rede",
+        "nao ta conectando","não ta conectando",
+        "ele nao conecta","ele não conecta","nao conecta na rede","não conecta na rede",
+      ])) {
+        session.step = "ask_ip";
+        reply = pick(
+          `Entendido, ${session.name}! Problema de conexão geralmente é de configuração de IP 😊\n\nVamos resolver isso!\n\n${buildAskIpMsg(session.name)}`,
+          `Tá, ${session.name}! Quando o microterminal não conecta, a causa mais comum é o IP errado ou desatualizado.\n\nVamos verificar 👇\n\n${buildAskIpMsg(session.name)}`,
+        );
+        break;
+      }
+
       // Se mensagem muito vaga, pede mais detalhes
       if (msg.length < 5) {
         reply = `Me conta um pouco mais sobre o que está acontecendo 😊\n\nPor exemplo: "o microterminal não conecta na rede" ou "aparece erro na tela"`;
@@ -327,6 +349,19 @@ export async function processMessage(message, chatId, from) {
 
     // ── config_terminal ───────────────────────────────────────────
     case "config_terminal": {
+      // "Estava sim" / "sim estava" = confirmando pergunta sobre o teclado, NÃO confirmando que funcionou
+      if (/\bestava\b/.test(msg) && isPositive(msg)) {
+        reply = (
+          `Ok, o teclado estava conectado antes de ligar 👍\n\n` +
+          `Nesse caso, vamos tentar pressionar o *P* mais rápido:\n\n` +
+          `1️⃣ Desligue o microterminal\n` +
+          `2️⃣ Posicione o dedo *já na tecla P* antes de ligar\n` +
+          `3️⃣ Ligue e pressione *P imediatamente* — a janela dos pontinhos é bem rápida!\n\n` +
+          `Conseguiu abrir o menu desta vez? 😊`
+        );
+        break;
+      }
+
       if (isPositive(msg)) {
         session.step = "confirm_done";
         reply = `Boa! 👍\n\nSó pra confirmar: está funcionando normalmente agora? 😊`;
@@ -370,6 +405,29 @@ export async function processMessage(message, chatId, from) {
       // IP errado — mencionou que digitou errado
       if (contemAlgum(msg, ["errei", "digitei errado", "ip errado", "errado", "coloquei errado"])) {
         reply = `Sem problema! Para corrigir:\n\n${buildConfigMsg(session.ip, true)}\n\n_(Refaz o processo do zero: desliga, liga, P, 1, digita o IP certo, Enter, H, 1)_`;
+        break;
+      }
+
+      // Tela preta / sem imagem — sintoma diferente, não é falha de config
+      if (contemAlgum(msg, [
+        "tela preta", "tela ta preta", "tela está preta", "tela esta preta",
+        "tela ficou preta", "tela fico preta",
+        "ta preto", "está preto", "esta preto", "ficou preto", "fico preto",
+        "ele ta preto", "ele esta preto", "ele ficou preto",
+        "sem imagem", "sem sinal", "nao tem imagem", "não tem imagem",
+        "tela apagou", "sumiu a tela",
+        "tela nao liga", "tela não liga", "tela nao acende", "tela não acende",
+        "tela em branco", "tela branca",
+      ])) {
+        reply = (
+          `Hmm, tela preta é diferente — pode ser algo no cabo ou na entrada de vídeo 🤔\n\n` +
+          `Vamos checar:\n\n` +
+          `🔌 *Cabo de vídeo* — o cabo que vai do microterminal pro monitor está bem encaixado dos dois lados?\n\n` +
+          `📺 *Entrada correta* — o monitor está na entrada certa? ` +
+          `_(alguns monitores têm várias entradas — HDMI, VGA, DisplayPort. Tenta apertar o botão de *Source* ou *Input* no monitor pra ver se muda)_\n\n` +
+          `💡 *O microterminal ligou?* — tem alguma luz acendendo nele quando liga?\n\n` +
+          `Me conta o que você vê 😊`
+        );
         break;
       }
 
@@ -747,6 +805,8 @@ function extrairNome(messageOriginal) {
   for (const palavra of palavras) {
     const limpo     = palavra.replace(/[^a-zA-ZÀ-ÿ]/g, "");
     const limpoNorm = limpo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    // Rejeita palavras que começam com prefixo de saudação (ex: "oikl", "olaa", "opa123")
+    if (/^(oi|ol[aá]|opa|hey|hi|eai|bom|boa)/.test(limpoNorm)) continue;
     if (!NAO_NOMES.has(limpoNorm) && palavraEhNome(limpo)) {
       return limpo.charAt(0).toUpperCase() + limpo.slice(1).toLowerCase();
     }
