@@ -3,6 +3,7 @@ import { getSession, saveSession, deleteSession } from "./session.js";
 import { log } from "./logger.js";
 import { notificarSuporte } from "./zapi.js";
 import { notificarSuporteMeta } from "./meta.js";
+import stringSimilarity from "string-similarity";
 
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 900_000; // 15 min
 
@@ -37,7 +38,7 @@ export async function processMessage(message, chatId, from) {
     session = { step: "start", name: null, ip: null, attempts: 0, lastInteraction: now };
   }
 
-  const msg = normalizar(message);
+  const msg = fuzzyNormalizar(normalizar(message));
   console.log(`🔄 [${from}] step="${session.step}" msg="${msg.slice(0, 60)}"`);
 
   // ── Iniciador silencioso (áudio sem sessão) ──────────────────────
@@ -691,6 +692,56 @@ function normalizar(text) {
     .replace(/\bachô\b/g, "achou")
     .replace(/\bencontrei\b/g, "encontrei")
     .replace(/\bencontrô\b/g, "encontrou");
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Fuzzy normalizer — corrige qualquer typo de palavras-chave do domínio
+// automaticamente usando similaridade de string (≥ 0.80)
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Mapa: palavra canônica → lista de formas que ela pode aparecer (para treinamento).
+ * O fuzzy compara cada palavra da mensagem com TODAS as chaves deste mapa.
+ * Só palavras com ≥ 6 letras são analisadas (curtas têm muitos falso-positivos).
+ */
+const FUZZY_KEYWORDS = {
+  "desconectou":  ["desconectou","desconetou","desconertou","disconectou","desconecou","desconnectou"],
+  "conectou":     ["conectou","conetou","conecou","connectou","conctou"],
+  "conecta":      ["conecta","coneta","konecta","conekta"],
+  "conectar":     ["conectar","conetar","connectar","konectar"],
+  "funciona":     ["funciona","funçiona","funcioa","funco","funcionya","funciorna"],
+  "funcionou":    ["funcionou","funcionô","funcionau","funconou","funcionow"],
+  "carregando":   ["carregando","caregando","carreganod","carregondo","carregand"],
+  "carrega":      ["carrega","carega","caarega","carrega"],
+  "configurar":   ["configurar","cofigurar","configurrar","configuarar","confiugar"],
+  "configurou":   ["configurou","cofigurou","configurô","configurau"],
+  "pressionar":   ["pressionar","precionar","pressionnar","presionar","pressioar"],
+  "pressionei":   ["pressionei","precionei","presionei","pressoinei"],
+  "desligar":     ["desligar","dezligar","desliguar","deslgar"],
+  "desligou":     ["desligou","dezligou","desligô","desligau"],
+  "microterminal":["microterminal","mircoterminal","microterinal","microtermianl","mictroterminal"],
+  "teclado":      ["teclado","tecladu","tecaldo","tecado","tecldo"],
+  "problema":     ["problema","poblema","porblema","probema","ploblema","probrlema"],
+  "encontrei":    ["encontrei","encontri","encontrei","encotrei","enontrei"],
+  "apareceu":     ["apareceu","apareceo","aoareceu","aparceu","aparceeu"],
+};
+
+// Achata para lista de termos e mantém mapa de retorno
+const _fuzzyTerms = Object.keys(FUZZY_KEYWORDS);
+
+function fuzzyNormalizarPalavra(palavra) {
+  if (palavra.length < 6) return palavra; // palavras curtas → não mexe
+  const best = stringSimilarity.findBestMatch(palavra, _fuzzyTerms);
+  if (best.bestMatch.rating >= 0.80) return best.bestMatch.target;
+  return palavra;
+}
+
+function fuzzyNormalizar(msg) {
+  return msg.split(/\b/).map(token => {
+    // Só processa tokens que sejam só letras (palavras)
+    if (!/^[a-z]{6,}$/.test(token)) return token;
+    return fuzzyNormalizarPalavra(token);
+  }).join("");
 }
 
 /** Verifica se a mensagem contém pelo menos uma das palavras/frases */
