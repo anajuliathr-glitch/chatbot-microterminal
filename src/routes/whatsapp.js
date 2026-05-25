@@ -184,9 +184,11 @@ router.get("/qrcode", (req, res) => {
   const qr = getQRCode();
   if (!qr) {
     return res.send(`
-      <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+      <html>
+      <head><meta http-equiv="refresh" content="5"></head>
+      <body style="font-family:sans-serif;text-align:center;padding:40px">
         <h2>⏳ Aguardando QR Code...</h2>
-        <p>O servidor ainda está inicializando. Aguarde alguns segundos e <a href="/whatsapp/qrcode">atualize a página</a>.</p>
+        <p>Atualizando automaticamente em 5 segundos...</p>
         <p>Status atual: <strong>${status}</strong></p>
       </body></html>
     `);
@@ -195,11 +197,14 @@ router.get("/qrcode", (req, res) => {
   // Exibe QR code usando API externa (sem precisar de pacote extra)
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
   res.send(`
-    <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+    <html>
+    <head><meta http-equiv="refresh" content="15"></head>
+    <body style="font-family:sans-serif;text-align:center;padding:40px">
       <h2>📱 Escaneie com o WhatsApp</h2>
       <p>Abra o WhatsApp → <strong>Aparelhos conectados</strong> → <strong>Conectar aparelho</strong></p>
       <img src="${qrUrl}" style="margin:20px auto;display:block;border:1px solid #ccc;padding:10px;border-radius:8px"/>
-      <p style="color:#888">O QR code expira em 20 segundos — se não funcionar, <a href="/whatsapp/qrcode">atualize a página</a></p>
+      <p style="color:#888">O QR renova automaticamente a cada 15 segundos 🔄</p>
+      <p style="color:#888;font-size:12px">Assim que escanear, a página muda automaticamente ✅</p>
     </body></html>
   `);
 });
