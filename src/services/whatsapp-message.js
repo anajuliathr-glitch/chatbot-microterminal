@@ -350,6 +350,19 @@ export async function processMessage(message, chatId, from) {
 
     // ── config_terminal ───────────────────────────────────────────
     case "config_terminal": {
+      // Usuário encontrou/tem o IP e quer saber como configurar
+      const ipNoConfig = extrairIP(msg);
+      if (ipNoConfig) {
+        session.ip = ipNoConfig;
+        session.attempts = 0;
+        reply = `Anotei o IP: *${session.ip}* 👍\n\n${buildConfigMsg(session.ip)}`;
+        break;
+      }
+      if (contemAlgum(msg, ["achei o ip","achei ip","encontrei o ip","encontrei ip","tenho o ip","consegui o ip","peguei o ip","como coloco","como configuro","como ponho"])) {
+        reply = `Boa! Me manda o número do IP que você encontrou 😊\n\nÉ no formato *192.168.x.x*`;
+        break;
+      }
+
       // "Estava sim" / "sim estava" = confirmando pergunta sobre o teclado, NÃO confirmando que funcionou
       if (/\bestava\b/.test(msg) && isPositive(msg)) {
         reply = (
@@ -420,6 +433,7 @@ export async function processMessage(message, chatId, from) {
         "tela nao liga", "tela não liga", "tela nao acende", "tela não acende",
         "tela em branco", "tela branca",
       ])) {
+        session.subStep = "tela_preta";
         reply = (
           `Hmm, tela preta é diferente — pode ser algo no cabo ou na entrada de vídeo 🤔\n\n` +
           `Vamos checar:\n\n` +
@@ -429,6 +443,29 @@ export async function processMessage(message, chatId, from) {
           `💡 *O microterminal ligou?* — tem alguma luz acendendo nele quando liga?\n\n` +
           `Me conta o que você vê 😊`
         );
+        break;
+      }
+
+      // Resposta à pergunta sobre tela preta (cabo/entrada/luz)
+      if (session.subStep === "tela_preta") {
+        session.subStep = null;
+        if (isNegative(msg)) {
+          reply = (
+            `Então pode ser o cabo ou a entrada mesmo 🔌\n\n` +
+            `Tenta:\n` +
+            `1️⃣ Desconectar e reconectar o *cabo de vídeo* dos dois lados\n` +
+            `2️⃣ Se o monitor tiver botão de *Source/Input*, apertar pra mudar a entrada\n` +
+            `3️⃣ Verificar se o microterminal está *plugado na tomada*\n\n` +
+            `Me avisa o que apareceu 😊`
+          );
+        } else {
+          // Disse "sim" — cabo ok, luz acendendo → problema provavelmente na rede
+          reply = (
+            `Ok! Se o microterminal liga e o cabo está ok, o problema provavelmente é de configuração de rede 👍\n\n` +
+            `Você tem o IP do computador? Me manda que a gente configura o terminal agora 😊`
+          );
+          session.step = "teach_ip";
+        }
         break;
       }
 
@@ -482,6 +519,20 @@ export async function processMessage(message, chatId, from) {
           ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
           : `Como estamos fora do horário agora, um técnico entra em contato assim que estivermos ON (seg-sex 8h-18h) 🛠️`;
         return `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\n${contatoMsg}\n\nQualquer dúvida, é só chamar!`;
+      }
+      // Usuário encontrou o IP durante a escalation — retoma o fluxo
+      const ipNaEscalation = extrairIP(msg);
+      if (ipNaEscalation) {
+        session.ip = ipNaEscalation;
+        session.step = "config_terminal";
+        session.attempts = 0;
+        reply = `Ótimo, anotei o IP: *${session.ip}* 👍\n\n${buildConfigMsg(session.ip)}`;
+        break;
+      }
+      if (contemAlgum(msg, ["achei o ip","achei ip","encontrei o ip","encontrei ip","tenho o ip","consegui o ip","peguei o ip"])) {
+        session.step = "teach_ip";
+        reply = `Boa! Me manda o número que apareceu 😊\n\nÉ no formato *192.168.x.x*`;
+        break;
       }
       if (isNegative(msg)) {
         session.step = "config_terminal";
@@ -583,6 +634,8 @@ function normalizar(text) {
     // ── typos de "não" ────────────────────────────────────────────
     .replace(/\bn[aã]o\b/g, "nao")
     .replace(/\bnao\b/g, "nao")
+    .replace(/\bna[09]\b/g, "nao")      // Na9, Na0 → não
+    .replace(/\bn4o\b/g, "nao")         // n4o → não
 
     // ── typos de "sim" ────────────────────────────────────────────
     .replace(/\bso+m\b/g, "sim")
@@ -596,6 +649,8 @@ function normalizar(text) {
 
     // ── typos de "conectar/conexão" ──────────────────────────────
     .replace(/\bconef[a-z]+\b/g, "nao conecta")   // conefay, conefou etc
+    .replace(/\bcob[ae]t[a-z]*\b/g, "conecta")    // cobeta, cobeta → conecta
+    .replace(/\bco[a-z]?et[a-z]*\b/g, "conecta")  // coeta, coreta → conecta
     .replace(/\bconeta[a-z]*\b/g, "conecta")
     .replace(/\bkoneta[a-z]*\b/g, "conecta")
     .replace(/\bkonect[a-z]*\b/g, "conecta")
