@@ -604,8 +604,12 @@ function normalizar(text) {
     .replace(/\bconexaum\b/g, "conexao")
     .replace(/\bkonexao\b/g, "conexao")
     .replace(/\bconetar\b/g, "conectar")
-    .replace(/\bdesconet[a-z]+\b/g, "desconectou")
-    .replace(/\bdesconect[a-z]+\b/g, "desconectou")
+    .replace(/\bdesconet[a-z]+\b/g, "desconectou")    // desconetou
+    .replace(/\bdesconert[a-z]+\b/g, "desconectou")   // desconertou
+    .replace(/\bdesconect[a-z]+\b/g, "desconectou")   // desconectou (correto e variações)
+    .replace(/\bdisconect[a-z]+\b/g, "desconectou")   // disconectou
+    .replace(/\bdesconetc[a-z]+\b/g, "desconectou")   // desconetcou
+    .replace(/\bdesconec[^t][a-z]*\b/g, "desconectou") // desconecou, desconecou etc
 
     // ── typos de "funcionar" ──────────────────────────────────────
     .replace(/\bfuncion[ao]u\b/g, "funcionou")
