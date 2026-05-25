@@ -350,6 +350,14 @@ export async function processMessage(message, chatId, from) {
 
     // ── config_terminal ───────────────────────────────────────────
     case "config_terminal": {
+      // Se chegou aqui sem IP, volta pro fluxo de buscar IP
+      if (!session.ip) {
+        session.step = "teach_ip";
+        session.attempts = 0;
+        reply = `Ainda preciso do IP pra continuar 😊\n\n${buildAskIpMsg(session.name)}`;
+        break;
+      }
+
       // Usuário encontrou/tem o IP e quer saber como configurar
       const ipNoConfig = extrairIP(msg);
       if (ipNoConfig) {
@@ -536,6 +544,7 @@ export async function processMessage(message, chatId, from) {
       }
       if (isNegative(msg)) {
         session.step = "config_terminal";
+        session.attempts = 0;
         reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo no microterminal agora?`;
       } else {
         reply = `Para chamar o suporte, responde *sim*.\nSe quiser continuar tentando, responde *não* 😊`;
