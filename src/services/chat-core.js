@@ -3,6 +3,7 @@
  * Used by both src/routes/chat.js (HTTP/API) and src/services/whatsapp-message.js (WhatsApp).
  */
 import stringSimilarity from "string-similarity";
+import { logEvent } from "./analytics.js";
 
 // ────────────────────────────────────────────────────────────────────
 // Utilities
@@ -552,6 +553,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
     notificar = async () => {},
     isAffirmativeFn = null,
     isNegativeFn = null,
+    chatId = "api",
   } = options;
 
   // Helpers: use AI override if provided, otherwise sync
@@ -563,12 +565,24 @@ export async function processConversation(msg, rawMessage, session, options = {}
     ? async (m) => { const r = await isNegativeFn(m); return r !== null ? r : isNegative(m); }
     : async (m) => isNegative(m);
 
+  // ── Analytics: log incoming message ──────────────────────────────
+  logEvent({ type: "message", from: chatId, step: session.step, msg: rawMessage.slice(0, 200) });
+
+  // ── Analytics: track step changes ────────────────────────────────
+  const _stepBefore = session.step;
+  function _trackStep() {
+    if (session.step !== _stepBefore) {
+      logEvent({ type: "step_change", from: chatId, from_step: _stepBefore, to_step: session.step });
+    }
+  }
+
   let reply = "";
 
   switch (session.step) {
 
     // ── start ────────────────────────────────────────────────────
     case "start": {
+      logEvent({ type: "session_start", from: chatId });
       session.step = "ask_name";
       const s = saudacaoHorario();
       if (isBusinessHours()) {
@@ -727,6 +741,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
           reply = `${respostaRAG}\n\n---\nIsso resolveu seu problema? 😊`;
         } else if (!session.clarificationAsked) {
           session.clarificationAsked = true;
+          logEvent({ type: "clarification", from: chatId, step: _stepBefore });
           reply = (
             `Hmm, não entendi muito bem 😊\n\n` +
             `Pode me contar melhor o que está acontecendo com o microterminal?\n\n` +
@@ -748,6 +763,8 @@ export async function processConversation(msg, rawMessage, session, options = {}
     // ── rag_followup ──────────────────────────────────────────────
     case "rag_followup": {
       if (await checkPositive(msg)) {
+        logEvent({ type: "resolved", from: chatId, name: session.name });
+        logEvent({ type: "session_end", from: chatId, reason: "resolved" });
         return {
           reply: pick(
             `Boa, ${session.name}! 🎉\n\nFico feliz que ajudou 😄\n\nQualquer coisa, é só chamar!`,
@@ -1153,6 +1170,8 @@ export async function processConversation(msg, rawMessage, session, options = {}
       }
 
       if (!descrevePersistencia && await checkPositive(msg)) {
+        logEvent({ type: "escalation", from: chatId, name: session.name });
+        logEvent({ type: "session_end", from: chatId, reason: "escalation" });
         await notificar(session.name, null, session.ip);
         const contatoMsg = isBusinessHours()
           ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
@@ -1175,6 +1194,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
     // ── confirm_done ──────────────────────────────────────────────
     case "confirm_done": {
       if (await checkPositive(msg)) {
+        logEvent({ type: "resolved", from: chatId, name: session.name });
         session.step = "final";
         reply = pick(
           `Boa ${session.name}! 🎉\n\nFuncionou 😄\n\nQualquer coisa, chama 👍`,
@@ -1192,6 +1212,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
 
     // ── final ─────────────────────────────────────────────────────
     case "final": {
+      logEvent({ type: "session_end", from: chatId, reason: "thanks" });
       return {
         reply: pick(
           `Por nada 😊\n\nSe precisar, é só chamar! 👍`,
@@ -1210,5 +1231,6 @@ export async function processConversation(msg, rawMessage, session, options = {}
     }
   }
 
+  _trackStep();
   return { reply, session, shouldDelete: false };
 }

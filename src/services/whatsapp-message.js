@@ -104,7 +104,7 @@ export async function processMessage(message, chatId, from) {
     msg,
     message,
     session,
-    { responderComRAG, notificar },
+    { responderComRAG, notificar, chatId },
   );
 
   if (shouldDelete) {
