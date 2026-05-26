@@ -48,6 +48,8 @@ function normalize(text) {
     // \u2500\u2500 typos de "nao" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     .replace(/\bnop+\b/g, "nao")
     .replace(/\bneh\b/g, "nao")
+    .replace(/\bna[09]\b/g, "nao")
+    .replace(/\bn4o\b/g, "nao")
 
     // \u2500\u2500 typos de "ok" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     .replace(/\bokk+\b/g, "ok")
@@ -453,6 +455,7 @@ router.post("/", async (req, res) => {
         for (const palavra of palavras) {
           const limpo     = palavra.replace(/[^a-zA-ZÀ-ÿ]/g, "");
           const limpoNorm = limpo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+          if (/^(oi|ol[aá]|opa|hey|hi|eai|bom|boa)/.test(limpoNorm)) continue;
           if (!NAO_NOMES.has(limpoNorm) && palavraEhNome(limpo)) {
             candidato = limpo;
             break;
@@ -829,7 +832,17 @@ router.post("/", async (req, res) => {
         "nao mudou nada","igual ainda",
       ].some(w => msg.includes(w));
 
-      if (!descrevePersistencia && await isAffirmative(msg)) {
+      // Usuário encontrou o IP durante a escalation — retoma o fluxo
+      const ipEscalation = extractIP(msg);
+      if (ipEscalation) {
+        session.ip = ipEscalation;
+        session.step = "config_terminal";
+        session.attempts = 0;
+        reply = buildConfigMsg(session.ip);
+      } else if (["achei o ip","achei ip","encontrei o ip","encontrei ip","tenho o ip","consegui o ip"].some(w => msg.includes(w))) {
+        session.step = "teach_ip";
+        reply = `Boa! Me manda o número do IP 😊\n\nÉ no formato *192.168.x.x*`;
+      } else if (!descrevePersistencia && await isAffirmative(msg)) {
         deleteSession(session_id);
         const contatoMsg = isBusinessHours()
           ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
@@ -837,7 +850,7 @@ router.post("/", async (req, res) => {
         return res.send(`Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\n${contatoMsg}\n\nQualquer dúvida, é só chamar!`);
       } else if (!descrevePersistencia && await isNegative(msg)) {
         session.step = "config_terminal";
-        session.attempts = 1; // dá mais 2 tentativas antes de escalar de novo
+        session.attempts = 1;
         reply = `Tudo bem! Vamos continuar tentando 💪\n\nMe conta o que está aparecendo no microterminal agora?`;
       } else {
         reply = `Para chamar o suporte, responde *sim*.\nSe quiser continuar tentando, responde *não* 😊`;

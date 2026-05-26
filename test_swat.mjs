@@ -297,6 +297,73 @@ s=sid(); await t("oi",s,"M19");
 await t("eu sou Ana",s,"M20 eu sou X","Ana");
 
 // ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO N — Typos reais do WhatsApp (vistos em produção)");
+// ══════════════════════════════════════════════════════
+
+// "Nao cobeta" → não conecta
+s=sid(); await t("oi",s,"N01"); await t("Ana",s,"N02");
+await t("nao cobeta",s,"N03 cobeta=conecta", any("ip","conecta","verificar"));
+
+// "Desconertou" → desconectou
+s=sid(); await t("oi",s,"N04"); await t("Bia",s,"N05");
+await t("desconertou",s,"N06 desconertou", any("ip","conecta","verificar"));
+
+// "Naoconeta" (tudo junto sem espaço)
+s=sid(); await t("oi",s,"N07"); await t("Cris",s,"N08");
+await t("naoconeta",s,"N09 naoconeta junto", any("ip","conecta","verificar"));
+
+// "Na9" → não
+s=sid(); await t("oi",s,"N10"); await t("Dani",s,"N11");
+await t("nao conecta",s,"N12");
+await t("nao sei o ip",s,"N13");
+await t("nao achei",s,"N14");
+await t("Na9",s,"N15 Na9=nao", any("tenta","cmd","windows","passo"));
+
+// "Nao conseguu" → não consegui
+s=sid(); await t("oi",s,"N16"); await t("Fer",s,"N17");
+await t("nao conecta",s,"N18");
+await t("nao sei",s,"N19");
+await t("nao conseguu",s,"N20 conseguu=consegui", any("tenta","dificil","suporte"));
+
+// "Disconectou" → desconectou
+s=sid(); await t("oi",s,"N21"); await t("Gabi",s,"N22");
+await t("disconectou",s,"N23 disconectou", any("ip","conecta","verificar"));
+
+// "Nao deu certo" no teach_ip
+s=sid(); await t("oi",s,"N24"); await t("Helo",s,"N25");
+await t("nao conecta",s,"N26");
+await t("nao sei",s,"N27");
+await t("nao deu certo",s,"N28 nao deu certo no teach_ip", any("tenta","passo","cmd"));
+
+// "Ele nao conecta" → vai direto pro IP
+s=sid(); await t("oi",s,"N29"); await t("Iris",s,"N30");
+await t("ele nao conecta",s,"N31 ele nao conecta", any("ip","conecta"));
+
+// "Nao carrega" → problema de conexão
+s=sid(); await t("oi",s,"N32"); await t("Juli",s,"N33");
+await t("nao carrega",s,"N34 nao carrega", any("ip","conecta","verificar"));
+
+// "Oikl" não deve ser aceito como nome
+s=sid(); await t("oi",s,"N35");
+await t("Oikl",s,"N36 oikl nao é nome", any("nome","chamar"));
+
+// "Achei o ip" na escalation retoma o fluxo
+s=sid(); await t("oi",s,"N37"); await t("Kika",s,"N38");
+await t("nao conecta",s,"N39");
+await t("nao sei",s,"N40");
+await t("nao achei",s,"N41");
+await t("nao consegui de jeito nenhum",s,"N42");
+await t("nao",s,"N43 recusa suporte");
+await t("achei o ip",s,"N44 achei o ip na escalation", any("manda","192","ip","número"));
+
+// "Estava sim" não deve pular pra confirm_done
+s=sid(); await t("oi",s,"N45"); await t("Leo",s,"N46");
+await t("nao conecta",s,"N47");
+await t("192.168.1.50",s,"N48");
+await t("nao foi",s,"N49");
+await t("estava sim",s,"N50 estava sim nao é confirmação", none("funcionando normalmente"));
+
+// ══════════════════════════════════════════════════════
 console.log("\n\n");
 console.log("═".repeat(55));
 const pct = Math.round(passed/total*100);
