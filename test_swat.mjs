@@ -575,6 +575,120 @@ await t("nao sei",s,"T24");
 await t("abriu cmd mas nao entendi o que apareceu",s,"T25 cmd nao entendeu", any("ipv4","192","endereco","endereço","numero","número","procura"));
 
 // ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO U — Cenários de produção adicionais");
+// ══════════════════════════════════════════════════════
+
+// "nao sei o que e ipv4" em teach_ip → deve explicar o que é IPv4
+s=sid(); await t("oi",s,"U01"); await t("Ana",s,"U02");
+await t("nao conecta",s,"U03");
+await t("nao sei",s,"U04");
+await t("nao sei o que e ipv4",s,"U05 o que e ipv4", any("192","formato","numero","número","ipconfig","cmd","windows"));
+
+// "como configuro do zero" em ask_problem → deve guiar para IP
+s=sid(); await t("oi",s,"U06"); await t("Bru",s,"U07");
+await t("como configuro do zero",s,"U08 configuro do zero", any("ip","configurar","sabe","verificar"));
+
+// "abriu mas so aparece ipv6" em teach_ip → orientar Ethernet
+s=sid(); await t("oi",s,"U09"); await t("Car",s,"U10");
+await t("nao conecta",s,"U11");
+await t("nao sei",s,"U12");
+await t("abriu mas so aparece ipv6",s,"U13 so ipv6", any("cabo","ethernet","local area","wifi","adaptador","rede"));
+
+// "saiu do menu sem salvar" em config_terminal → instruções para refazer
+s=sid(); await t("oi",s,"U14"); await t("Dan",s,"U15");
+await t("nao conecta",s,"U16");
+await t("192.168.1.50",s,"U17");
+await t("saiu do menu sem salvar",s,"U18 saiu sem salvar", any("salvar","h","1","menu","novamente","refaz","deslig"));
+
+// "digitei mas apertei cancel" em config_terminal → instruções para refazer
+s=sid(); await t("oi",s,"U19"); await t("Eva",s,"U20");
+await t("nao conecta",s,"U21");
+await t("192.168.1.50",s,"U22");
+await t("digitei mas apertei cancel",s,"U23 apertou cancel", any("salvar","h","1","menu","novamente","refaz","deslig","ip"));
+
+// "funcionou ontem mas hoje parou" em ask_problem → pedir IP
+s=sid(); await t("oi",s,"U24"); await t("Fab",s,"U25");
+await t("funcionou ontem mas hoje parou",s,"U26 funcionou ontem", any("ip","conecta","verificar","sabe"));
+
+// "ficou piscando" em ask_problem → problema de conexão → pedir IP
+s=sid(); await t("oi",s,"U27"); await t("Gil",s,"U28");
+await t("ficou piscando",s,"U29 ficou piscando", any("ip","conecta","verificar","sabe","rede"));
+
+// "voltou a tela inicial" em config_terminal → orientar (mid-config ou sucesso)
+s=sid(); await t("oi",s,"U30"); await t("Hel",s,"U31");
+await t("nao conecta",s,"U32");
+await t("192.168.1.50",s,"U33");
+await t("voltou a tela inicial",s,"U34 voltou tela inicial", nonempty);
+
+// "teclado nao estava conectado" em config_terminal → orientar reconexão
+s=sid(); await t("oi",s,"U35"); await t("Ian",s,"U36");
+await t("nao conecta",s,"U37");
+await t("192.168.1.50",s,"U38");
+await t("nao consegui pois o teclado nao estava conectado",s,"U39 teclado desconectado config", any("teclado","conectado","plugado","antes"));
+
+// "pressionei P mas apareceu uns caracteres" em config_terminal → guia
+s=sid(); await t("oi",s,"U40"); await t("Jul",s,"U41");
+await t("nao conecta",s,"U42");
+await t("192.168.1.50",s,"U43");
+await t("pressionei P mas apareceu uns caracteres",s,"U44 caracteres apos P", nonempty);
+
+// ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO V — Typos não cobertos ainda");
+// ══════════════════════════════════════════════════════
+
+// "nao conetca" → conecta → pedir IP
+s=sid(); await t("oi",s,"V01"); await t("Kel",s,"V02");
+await t("nao conetca",s,"V03 nao conetca", any("ip","conecta","verificar","sabe"));
+
+// "desconetou" → desconectou → pedir IP
+s=sid(); await t("oi",s,"V04"); await t("Leo",s,"V05");
+await t("desconetou",s,"V06 desconetou", any("ip","conecta","verificar","sabe"));
+
+// "nao coecta" → nao conecta → pedir IP
+s=sid(); await t("oi",s,"V07"); await t("Mar",s,"V08");
+await t("nao coecta",s,"V09 nao coecta", any("ip","conecta","verificar","sabe"));
+
+// "nao funcoina" → nao funciona → pedir IP
+s=sid(); await t("oi",s,"V10"); await t("Nat",s,"V11");
+await t("nao funcoina",s,"V12 nao funcoina", any("ip","conecta","verificar","sabe"));
+
+// "slvei" → salvei → no config_terminal verifica se funcionou
+s=sid(); await t("oi",s,"V13"); await t("Oto",s,"V14");
+await t("nao conecta",s,"V15");
+await t("192.168.1.1",s,"V16");
+await t("slvei",s,"V17 slvei=salvei", nonempty);
+
+// "configuru" → configurou → checar se funcionou
+s=sid(); await t("oi",s,"V18"); await t("Pau",s,"V19");
+await t("nao conecta",s,"V20");
+await t("192.168.1.1",s,"V21");
+await t("configuru",s,"V22 configuru=configurou", nonempty);
+
+// "econtrei o ip" → achei o IP → deve pedir para mandar
+s=sid(); await t("oi",s,"V23"); await t("Qui",s,"V24");
+await t("nao conecta",s,"V25");
+await t("nao sei",s,"V26");
+await t("econtrei o ip",s,"V27 econtrei=encontrei", any("manda","192","numero","número","ip","otimo","ótimo"));
+
+// "nao achei o ip" → não achou → instrução passo-a-passo
+s=sid(); await t("oi",s,"V28"); await t("Ros",s,"V29");
+await t("nao conecta",s,"V30");
+await t("nao sei",s,"V31");
+await t("nao achei o ip",s,"V32 nao achei ip", any("windows","cmd","ipconfig","r","tenta","passo"));
+
+// "ta pedido senha" → senha no menu → escalação
+s=sid(); await t("oi",s,"V33"); await t("Ser",s,"V34");
+await t("nao conecta",s,"V35");
+await t("192.168.1.1",s,"V36");
+await t("ta pedido senha",s,"V37 pedindo senha config", any("senha","suporte","tecnico","técnico","equipe","thr"));
+
+// "pressionau P" → pressionou P → mid-config ou verificar
+s=sid(); await t("oi",s,"V38"); await t("Tia",s,"V39");
+await t("nao conecta",s,"V40");
+await t("192.168.1.1",s,"V41");
+await t("pressionau P agora apareceu o menu",s,"V42 pressionau+menu", any("1","pressione","digita","ip","salvar","h","caminho"));
+
+// ══════════════════════════════════════════════════════
 console.log("\n\n");
 console.log("═".repeat(55));
 const pct = Math.round(passed/total*100);
