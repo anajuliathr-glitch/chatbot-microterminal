@@ -364,6 +364,143 @@ await t("nao foi",s,"N49");
 await t("estava sim",s,"N50 estava sim nao é confirmação", none("funcionando normalmente"));
 
 // ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO O — Variações de problema no ask_problem");
+// ══════════════════════════════════════════════════════
+
+// "liga mas nao conecta" → deve pedir IP
+s=sid(); await t("oi",s,"O01"); await t("Ale",s,"O02");
+await t("liga mas nao conecta",s,"O03 liga mas nao conecta", any("ip","conecta","verificar","sabe"));
+
+// "ficou sem internet" → deve pedir IP
+s=sid(); await t("oi",s,"O04"); await t("Bru",s,"O05");
+await t("ficou sem internet",s,"O06 ficou sem internet", any("ip","conecta","verificar","sabe"));
+
+// "preciso configurar do zero" → deve pedir IP
+s=sid(); await t("oi",s,"O07"); await t("Car",s,"O08");
+await t("preciso configurar do zero",s,"O09 configurar do zero", any("ip","configurar","sabe","verificar"));
+
+// "como configuro o terminal" → deve responder de forma útil (não "não entendi")
+s=sid(); await t("oi",s,"O10"); await t("Dan",s,"O11");
+await t("como configuro o terminal",s,"O12 como configuro", none("nao entendi"));
+
+// "aparece erro na tela" → deve responder de forma útil (não "não entendi")
+s=sid(); await t("oi",s,"O13"); await t("Eva",s,"O14");
+await t("aparece erro na tela",s,"O15 erro na tela", none("nao entendi"));
+
+// "tenho o ip aqui, posso passar?" → deve dizer sim, manda
+s=sid(); await t("oi",s,"O16"); await t("Fab",s,"O17");
+await t("nao conecta",s,"O18");
+await t("tenho o ip aqui, posso passar?",s,"O19 tenho ip posso passar", any("manda","pode","sim","claro","otimo","ótimo"));
+
+// "reiniciou mas nao conecta" → deve pedir IP
+s=sid(); await t("oi",s,"O20"); await t("Gil",s,"O21");
+await t("reiniciou mas nao conecta",s,"O22 reiniciou nao conecta", any("ip","conecta","verificar","sabe"));
+
+// "funciona mas ta muito lento" → deve pedir IP (lentidão = rede)
+s=sid(); await t("oi",s,"O23"); await t("Hel",s,"O24");
+await t("funciona mas ta muito lento",s,"O25 muito lento", any("ip","lento","rede","verificar","sabe"));
+
+// ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO P — Mensagens ambíguas/curtas em vários steps");
+// ══════════════════════════════════════════════════════
+
+// "ok" no teach_ip → deve dar alguma orientação (não em branco)
+s=sid(); await t("oi",s,"P01"); await t("Ian",s,"P02");
+await t("nao conecta",s,"P03");
+await t("nao sei",s,"P04");
+await t("ok",s,"P05 ok no teach_ip", nonempty);
+
+// "entendi" no config_terminal → deve encorajar/aguardar
+s=sid(); await t("oi",s,"P06"); await t("Jul",s,"P07");
+await t("nao conecta",s,"P08");
+await t("192.168.1.1",s,"P09");
+await t("entendi",s,"P10 entendi no config_terminal", nonempty);
+
+// "certo" no ask_problem → deve pedir o que está acontecendo
+s=sid(); await t("oi",s,"P11"); await t("Kel",s,"P12");
+await t("certo",s,"P13 certo no ask_problem", nonempty);
+
+// "to aqui" em qualquer step → deve pedir esclarecimento
+s=sid(); await t("oi",s,"P14"); await t("Leo",s,"P15");
+await t("nao conecta",s,"P16");
+await t("nao sei",s,"P17");
+await t("to aqui",s,"P18 to aqui no teach_ip", nonempty);
+
+// ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO Q — Edge cases no teach_ip");
+// ══════════════════════════════════════════════════════
+
+// "tem dois ips aqui" → deve explicar usar IPv4 do cabo
+s=sid(); await t("oi",s,"Q01"); await t("Mar",s,"Q02");
+await t("nao conecta",s,"Q03");
+await t("nao sei",s,"Q04");
+await t("tem dois ips aqui",s,"Q05 dois ips", any("cabo","ipv4","endereco","endereço","qual"));
+
+// "apareceu varios numeros" → deve explicar usar IPv4
+s=sid(); await t("oi",s,"Q06"); await t("Nat",s,"Q07");
+await t("nao conecta",s,"Q08");
+await t("nao sei",s,"Q09");
+await t("apareceu varios numeros",s,"Q10 varios numeros", any("cabo","ipv4","endereco","endereço","qual","numero","número"));
+
+// "nao acho o cmd" → deve dar alternativa para abrir CMD
+s=sid(); await t("oi",s,"Q11"); await t("Oto",s,"Q12");
+await t("nao conecta",s,"Q13");
+await t("nao sei",s,"Q14");
+await t("nao acho o cmd",s,"Q15 nao acho cmd", any("windows","r","win","iniciar","pesquis","menu"));
+
+// "abriu mas esta vazio" → deve guiar o que digitar
+s=sid(); await t("oi",s,"Q16"); await t("Pau",s,"Q17");
+await t("nao conecta",s,"Q18");
+await t("nao sei",s,"Q19");
+await t("abriu mas esta vazio",s,"Q20 cmd vazio", any("ipconfig","digita","ip"));
+
+// "apareceu mas nao tem endereco ipv4" → deve explicar onde olhar
+s=sid(); await t("oi",s,"Q21"); await t("Qui",s,"Q22");
+await t("nao conecta",s,"Q23");
+await t("nao sei",s,"Q24");
+await t("apareceu mas nao tem endereco ipv4",s,"Q25 sem ipv4", any("cabo","wifi","adapter","ethernet","rede","placa","lista","procura"));
+
+// ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO R — Edge cases no config_terminal");
+// ══════════════════════════════════════════════════════
+
+// "o P nao funciona" → teclado não conectado
+s=sid(); await t("oi",s,"R01"); await t("Ros",s,"R02");
+await t("nao conecta",s,"R03");
+await t("192.168.1.1",s,"R04");
+await t("o P nao funciona",s,"R05 P nao funciona", any("teclado","conectado","plugado","antes de ligar"));
+
+// "menu apareceu mas sumiu rapido" → não pressionou P a tempo
+s=sid(); await t("oi",s,"R06"); await t("Ser",s,"R07");
+await t("nao conecta",s,"R08");
+await t("192.168.1.1",s,"R09");
+await t("menu apareceu mas sumiu rapido",s,"R10 menu sumiu rapido", any("pontinho","p","tecla","rapido","rápido","antes","posicion"));
+
+// "salvei mas voltou pra tela preta" → checar cabo/conexão
+s=sid(); await t("oi",s,"R11"); await t("Tia",s,"R12");
+await t("nao conecta",s,"R13");
+await t("192.168.1.1",s,"R14");
+await t("salvei mas voltou pra tela preta",s,"R15 salvei mas tela preta", any("cabo","ip","rede","confere","verifica","conectou"));
+
+// "nao apareceu o menu dos pontinhos" → timing/teclado
+s=sid(); await t("oi",s,"R16"); await t("Uma",s,"R17");
+await t("nao conecta",s,"R18");
+await t("192.168.1.1",s,"R19");
+await t("nao apareceu o menu dos pontinhos",s,"R20 sem menu pontinhos", any("teclado","p","tecla","antes","ligar","pontinho"));
+
+// "quanto tempo demora" → dar estimativa realista
+s=sid(); await t("oi",s,"R21"); await t("Val",s,"R22");
+await t("nao conecta",s,"R23");
+await t("192.168.1.1",s,"R24");
+await t("quanto tempo demora",s,"R25 quanto tempo demora", any("segundo","minuto","rapido","rápido","pouco","instante","automat"));
+
+// "pode me ligar" → oferecer escalation
+s=sid(); await t("oi",s,"R26"); await t("Wil",s,"R27");
+await t("nao conecta",s,"R28");
+await t("192.168.1.1",s,"R29");
+await t("pode me ligar",s,"R30 pode me ligar", any("suporte","tecnico","técnico","fila","contato","ligar","whatsapp"));
+
+// ══════════════════════════════════════════════════════
 console.log("\n\n");
 console.log("═".repeat(55));
 const pct = Math.round(passed/total*100);

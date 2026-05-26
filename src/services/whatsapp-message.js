@@ -342,6 +342,12 @@ export async function processMessage(message, chatId, from) {
           session.step = "escalation";
           reply = `Entendo que tá difícil encontrar o IP 😕\n\nPosso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato e te ajuda remotamente a localizar tudo 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
         }
+      } else if (contemAlgum(msg, ["dois ip","varios ip","vários ip","2 ip","dois endere","varios numero","vários numero","apareceu varios","apareceu vários","varios aqui","apareceu mais"])) {
+        reply = (
+          `Se apareceram vários números, procura o *Endereço IPv4* — costuma ter esse formato: *192.168.x.x* 😊\n\n` +
+          `Se aparecer mais de um (por exemplo WiFi e cabo de rede), usa o do *cabo de rede* (geralmente chamado *Ethernet* ou *Local Area Connection*) 👍\n\n` +
+          `Me manda o número quando encontrar!`
+        );
       } else {
         reply = `Preciso do IP para continuar 😊\n\nÉ um número assim: *192.168.x.x*\n\nEstá conseguindo encontrar? Se quiser, posso te guiar passo a passo 👍`;
       }
@@ -368,6 +374,19 @@ export async function processMessage(message, chatId, from) {
       }
       if (contemAlgum(msg, ["achei o ip","achei ip","encontrei o ip","encontrei ip","tenho o ip","consegui o ip","peguei o ip","como coloco","como configuro","como ponho"])) {
         reply = `Boa! Me manda o número do IP que você encontrou 😊\n\nÉ no formato *192.168.x.x*`;
+        break;
+      }
+
+      // Pede ligação / suporte humano
+      if (contemAlgum(msg, ["pode me ligar","me liga","me ligue","me ligar","quer ligar","voce liga","você liga","suporte","tecnico","técnico","quero ajuda"])) {
+        session.step = "escalation";
+        reply = `Entendido 😊\n\nPosso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação para te ajudar remotamente 👨‍🔧\n\nQuer que eu faça isso? Responde *sim* ou *não*`;
+        break;
+      }
+
+      // Pergunta sobre tempo de processo
+      if (contemAlgum(msg, ["quanto tempo","quanto demora","demora muito","demora quanto","leva quanto","leva muito tempo","quanto leva"])) {
+        reply = `É bem rápido — em geral menos de 1 minuto! 😊\n\nDepois de salvar (H → 1), o microterminal reinicia automaticamente e já tenta conectar.\n\nSe em 2 minutinhos ainda não conectar, me avisa que a gente verifica 👍`;
         break;
       }
 
@@ -415,6 +434,21 @@ export async function processMessage(message, chatId, from) {
       // Não apareceu o menu de configuração
       if (contemAlgum(msg, ["nao apareceu menu", "não apareceu menu", "nao abriu", "não abriu", "nao entrou", "não entrou", "nao foi", "não foi para o menu"])) {
         reply = `Quando você pressiona P, o microterminal deve mostrar um menu com as opções de IP.\n\nSe não apareceu, pode ser que o teclado não estava conectado antes de ligar — isso é importante!\n\n🔌 *Verifique:* o teclado estava plugado *antes* de ligar o terminal?\n\nSe estava, tenta pressionar P mais rápido logo que ligar 😊`;
+        break;
+      }
+
+      // Salvou mas voltou para tela preta
+      if (contemAlgum(msg, ["voltou pra tela preta","voltou para tela preta","voltou pra tela","ficou tela preta","tela voltou","voltou preta"])) {
+        session.attempts = (session.attempts || 0) + 1;
+        reply = (
+          `Hmm, voltou para a tela preta depois de salvar 🤔\n\n` +
+          `Isso geralmente acontece quando o IP está errado ou o cabo de rede está solto.\n\n` +
+          `Vamos verificar:\n` +
+          `🔹 *Confere o IP* — rode o \`ipconfig\` no computador e confirme o número (*${session.ip}*)\n` +
+          `🔹 *Tira e recoloca o cabo de rede* do microterminal\n` +
+          `_(Se o computador tiver WiFi e cabo, use o IP do *cabo*)_\n\n` +
+          `Tenta de novo e me conta como foi 😊`
+        );
         break;
       }
 

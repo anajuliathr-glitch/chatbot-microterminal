@@ -155,7 +155,7 @@ function isManualAffirmative(msg) {
     "entrou no menu","apareceu a tela","apareceu as opcoes",
     // variantes de "está conectando / funcionando normalmente"
     "conectando normalmente","conectou normalmente","esta conectando","está conectando",
-    "ta conectando","tá conectando","subiu","voltou","voltou a funcionar",
+    "ta conectando","tá conectando","subiu","voltou a funcionar",
   ];
   // Garante que "conectou"/"funcionou" não deem match em "desconectou"/"não funcionou"
   const msgFinal = msg.trim();
@@ -705,6 +705,15 @@ router.post("/", async (req, res) => {
         }
       }
 
+      // Múltiplos IPs / vários números → orienta usar IPv4 do cabo
+      else if (["dois ip","varios ip","vários ip","2 ip","dois endere","varios numero","vários numero","varios num","apareceu varios","apareceu vários","varios aqui","apareceu mais"].some(w => msg.includes(w))) {
+        reply = (
+          `Se apareceram vários números, procura o *Endereço IPv4* — costuma ter esse formato: *192.168.x.x* 😊\n\n` +
+          `Se aparecer mais de um (por exemplo WiFi e cabo de rede), usa o do *cabo de rede* (geralmente chamado *Ethernet* ou *Local Area Connection*) 👍\n\n` +
+          `Me manda o número quando encontrar!`
+        );
+      }
+
       else {
         const respostaRAGIp = await responderComRAG(message, session.name);
         if (respostaRAGIp) {
@@ -722,10 +731,15 @@ router.post("/", async (req, res) => {
       const errorType = detectErrorType(msg);
       const ipNovoConfig = extractIP(msg);
 
-      // Quer suporte humano remoto
-      if (["presencial","remoto","suporte","tecnico","técnico","quero ajuda","nao consigo","não consigo"].some(w => msg.includes(w))) {
+      // Quer suporte humano remoto / pede ligação
+      if (["presencial","remoto","suporte","tecnico","técnico","quero ajuda","nao consigo","não consigo","pode me ligar","me liga","me ligue","me ligar","quer ligar","voce liga","você liga"].some(w => msg.includes(w))) {
         session.step = "escalation";
         reply = `Entendido 😊\n\nPosso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação para te ajudar remotamente 👨‍🔧\n\nQuer que eu faça isso? Responde *sim* ou *não*`;
+      }
+
+      // Pergunta sobre tempo de processo
+      else if (["quanto tempo","quanto demora","demora muito","demora quanto","leva quanto","leva muito tempo","quanto leva"].some(w => msg.includes(w))) {
+        reply = `É bem rápido — em geral menos de 1 minuto! 😊\n\nDepois de salvar (H → 1), o microterminal reinicia automaticamente e já tenta conectar.\n\nSe em 2 minutinhos ainda não conectar, me avisa que a gente verifica 👍`;
       }
 
       else if (forgotToSave(msg)) {
@@ -753,6 +767,20 @@ router.post("/", async (req, res) => {
           `3️⃣ *Antes de ligar*, posicione o dedo já na tecla *P*\n` +
           `4️⃣ Ligue e pressione o *P imediatamente* assim que ligar\n\n` +
           `A janela dos pontinhos é bem rápida — com o dedo já posicionado fica muito mais fácil 😊`
+        );
+      }
+
+      // Salvou mas voltou para tela preta / não conectou após salvar
+      else if (["voltou pra tela preta","voltou para tela preta","voltou pra tela","ficou tela preta","tela voltou","voltou preta"].some(w => msg.includes(w))) {
+        session.attempts = Math.min((session.attempts || 0) + 1, 99);
+        reply = (
+          `Hmm, voltou para a tela preta depois de salvar 🤔\n\n` +
+          `Isso geralmente acontece quando o IP está errado ou o cabo de rede está solto.\n\n` +
+          `Vamos verificar:\n` +
+          `🔹 *Confere o IP* — rode o \`ipconfig\` no computador e confirme o número (*${session.ip}*)\n` +
+          `🔹 *Tira e recoloca o cabo de rede* do microterminal\n` +
+          `_(Se o computador tiver WiFi e cabo, use o IP do *cabo*)_\n\n` +
+          `Tenta de novo e me conta como foi 😊`
         );
       }
 
