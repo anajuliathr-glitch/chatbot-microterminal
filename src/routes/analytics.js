@@ -2,10 +2,12 @@
  * analytics.js — Dashboard route for the ThR chatbot analytics.
  * Serves a password-protected HTML dashboard at GET /analytics
  */
-import { Router } from "express";
+import { Router, urlencoded } from "express";
 import { readEvents } from "../services/analytics.js";
 
 const router = Router();
+// Formulário HTML envia urlencoded — precisa desse parser aqui
+router.use(urlencoded({ extended: false }));
 
 const PASSWORD = process.env.ANALYTICS_PASSWORD || "thr2024";
 const COOKIE_NAME = "thr_analytics_auth";
