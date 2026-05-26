@@ -13,6 +13,7 @@ import { isIAConfigured, getIAModel } from "./src/services/ai.js";
 import chatRouter from "./src/routes/chat.js";
 import whatsappRouter from "./src/routes/whatsapp.js";
 import whatsappMetaRouter from "./src/routes/whatsapp-meta.js";
+import analyticsRouter from "./src/routes/analytics.js";
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));
@@ -31,6 +32,7 @@ app.use(limiter);
 app.use("/chat", chatRouter);
 app.use("/whatsapp", whatsappRouter);       // Z-API (legado)
 app.use("/whatsapp-meta", whatsappMetaRouter); // Meta Cloud API
+app.use("/analytics", analyticsRouter);    // Dashboard de analytics
 
 // ── Endpoints de teste (só em NODE_ENV=test) ─────────────────────────
 if (process.env.NODE_ENV === "test") {

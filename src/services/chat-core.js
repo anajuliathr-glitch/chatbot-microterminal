@@ -3,6 +3,7 @@
  * Used by both src/routes/chat.js (HTTP/API) and src/services/whatsapp-message.js (WhatsApp).
  */
 import stringSimilarity from "string-similarity";
+import { logEvent } from "./analytics.js";
 
 // ────────────────────────────────────────────────────────────────────
 // Utilities
@@ -552,7 +553,15 @@ export async function processConversation(msg, rawMessage, session, options = {}
     notificar = async () => {},
     isAffirmativeFn = null,
     isNegativeFn = null,
+    chatId = null,
   } = options;
+
+  // ── Analytics instrumentation ──────────────────────────────────────
+  const prevStep = session.step;
+  logEvent({ type: "message", chatId, step: session.step, msg: msg.slice(0, 80) });
+  if (session.step === "start") {
+    logEvent({ type: "session_start", chatId });
+  }
 
   // Helpers: use AI override if provided, otherwise sync
   const checkPositive = isAffirmativeFn
@@ -727,6 +736,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
           reply = `${respostaRAG}\n\n---\nIsso resolveu seu problema? 😊`;
         } else if (!session.clarificationAsked) {
           session.clarificationAsked = true;
+          logEvent({ type: "clarification", chatId, msg: msg.slice(0, 120) });
           reply = (
             `Hmm, não entendi muito bem 😊\n\n` +
             `Pode me contar melhor o que está acontecendo com o microterminal?\n\n` +
@@ -748,6 +758,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
     // ── rag_followup ──────────────────────────────────────────────
     case "rag_followup": {
       if (await checkPositive(msg)) {
+        logEvent({ type: "resolved", chatId, name: session.name, via: "rag" });
         return {
           reply: pick(
             `Boa, ${session.name}! 🎉\n\nFico feliz que ajudou 😄\n\nQualquer coisa, é só chamar!`,
@@ -1153,6 +1164,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
       }
 
       if (!descrevePersistencia && await checkPositive(msg)) {
+        logEvent({ type: "escalation", chatId, name: session.name, ip: session.ip });
         await notificar(session.name, null, session.ip);
         const contatoMsg = isBusinessHours()
           ? `Em breve um técnico entra em contato aqui pelo WhatsApp 🛠️`
@@ -1175,6 +1187,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
     // ── confirm_done ──────────────────────────────────────────────
     case "confirm_done": {
       if (await checkPositive(msg)) {
+        logEvent({ type: "resolved", chatId, name: session.name, ip: session.ip });
         session.step = "final";
         reply = pick(
           `Boa ${session.name}! 🎉\n\nFuncionou 😄\n\nQualquer coisa, chama 👍`,
@@ -1208,6 +1221,11 @@ export async function processConversation(msg, rawMessage, session, options = {}
       session.step = "ask_problem";
       reply = `Me conta o que está acontecendo com o microterminal 😊`;
     }
+  }
+
+  // ── Log step change if any ─────────────────────────────────────────
+  if (session && session.step !== prevStep) {
+    logEvent({ type: "step_change", chatId, from: prevStep, to: session.step });
   }
 
   return { reply, session, shouldDelete: false };

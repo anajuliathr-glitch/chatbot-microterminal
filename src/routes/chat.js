@@ -161,6 +161,7 @@ router.post("/", async (req, res) => {
         notificar: async () => {},
         isAffirmativeFn,
         isNegativeFn,
+        chatId: session_id,
       },
     );
 
