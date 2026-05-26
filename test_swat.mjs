@@ -501,6 +501,80 @@ await t("192.168.1.1",s,"R29");
 await t("pode me ligar",s,"R30 pode me ligar", any("suporte","tecnico","técnico","fila","contato","ligar","whatsapp"));
 
 // ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO S — Mid-config: estados no meio da configuração");
+// ══════════════════════════════════════════════════════
+
+// "entrei no menu" no config_terminal — NÃO deve pular para confirm_done
+s=sid(); await t("oi",s,"S01"); await t("Ana",s,"S02");
+await t("nao conecta",s,"S03");
+await t("192.168.1.50",s,"S04");
+await t("entrei no menu",s,"S05 entrei no menu nao é confirm", any("1","pressione","digita","ip","salvar","h"));
+
+// "apareceu o menu de configuracao" — deve dar passos 4-8
+s=sid(); await t("oi",s,"S06"); await t("Bru",s,"S07");
+await t("nao conecta",s,"S08");
+await t("192.168.1.50",s,"S09");
+await t("apareceu o menu de configuracao",s,"S10 apareceu menu config", any("1","pressione","digita","ip","salvar","h"));
+
+// "consegui entrar no menu" — NÃO deve pular para confirm_done
+s=sid(); await t("oi",s,"S11"); await t("Car",s,"S12");
+await t("nao conecta",s,"S13");
+await t("192.168.1.50",s,"S14");
+await t("consegui entrar no menu",s,"S15 consegui menu nao é confirm", any("1","pressione","digita","ip","salvar","h"));
+
+// "ta pedindo pra digitar o ip" — deve dar instrução para digitar
+s=sid(); await t("oi",s,"S16"); await t("Dan",s,"S17");
+await t("nao conecta",s,"S18");
+await t("192.168.1.50",s,"S19");
+await t("ta pedindo pra digitar o ip",s,"S20 pedindo digitar ip", any("192.168.1.50","ip","digita","enter"));
+
+// "errei o ip la dentro" — deve dar instrução para refazer
+s=sid(); await t("oi",s,"S21"); await t("Eva",s,"S22");
+await t("nao conecta",s,"S23");
+await t("192.168.1.50",s,"S24");
+await t("errei o ip la dentro",s,"S25 errei o ip", any("192.168.1.50","refaz","refazer","digita","pressione","1","menu"));
+
+// "entrei mas nao sei o que fazer" — deve dar passos 4-8
+s=sid(); await t("oi",s,"S26"); await t("Fab",s,"S27");
+await t("nao conecta",s,"S28");
+await t("192.168.1.50",s,"S29");
+await t("entrei no menu mas nao sei o que fazer",s,"S30 entrei sem saber", any("1","pressione","digita","ip","salvar","h"));
+
+// ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO T — IPs especiais e edge cases no teach_ip");
+// ══════════════════════════════════════════════════════
+
+// "169.254.1.1" (APIPA) — deve avisar que é IP especial
+s=sid(); await t("oi",s,"T01"); await t("Gil",s,"T02");
+await t("nao conecta",s,"T03");
+await t("nao sei",s,"T04");
+await t("169.254.1.1",s,"T05 APIPA invalido", any("especial","apipa","nao funciona","não funciona","192","ipv4","servidor"));
+
+// "127.0.0.1" (loopback) — deve avisar que é IP especial
+s=sid(); await t("oi",s,"T06"); await t("Hel",s,"T07");
+await t("nao conecta",s,"T08");
+await t("nao sei",s,"T09");
+await t("127.0.0.1",s,"T10 loopback invalido", any("especial","nao funciona","não funciona","192","ipv4","servidor"));
+
+// "como acho o ip no celular" — deve redirecionar para o computador
+s=sid(); await t("oi",s,"T11"); await t("Ian",s,"T12");
+await t("nao conecta",s,"T13");
+await t("nao sei",s,"T14");
+await t("como acho o ip no celular",s,"T15 ip no celular", any("computador","servidor","cmd","windows","pc"));
+
+// "apareceu mas nao tem endereco ipv4 so tem ipv6" — orientar
+s=sid(); await t("oi",s,"T16"); await t("Jul",s,"T17");
+await t("nao conecta",s,"T18");
+await t("nao sei",s,"T19");
+await t("apareceu mas nao tem endereco ipv4 so tem ipv6",s,"T20 sem ipv4 so ipv6", any("cabo","wifi","ethernet","adapter","placa","local","rede","lista"));
+
+// "abriu cmd mas nao entendi o que apareceu" — orientar a procurar IPv4
+s=sid(); await t("oi",s,"T21"); await t("Kel",s,"T22");
+await t("nao conecta",s,"T23");
+await t("nao sei",s,"T24");
+await t("abriu cmd mas nao entendi o que apareceu",s,"T25 cmd nao entendeu", any("ipv4","192","endereco","endereço","numero","número","procura"));
+
+// ══════════════════════════════════════════════════════
 console.log("\n\n");
 console.log("═".repeat(55));
 const pct = Math.round(passed/total*100);

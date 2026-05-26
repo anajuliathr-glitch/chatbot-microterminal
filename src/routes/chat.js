@@ -203,6 +203,17 @@ function looksLikeIP(msg) {
   return extractIP(msg) !== null;
 }
 
+// Filtra IPs especiais que não servem para configurar o microterminal
+function isValidConfigIP(ip) {
+  if (!ip) return false;
+  const parts = ip.split(".").map(Number);
+  if (parts[0] === 127) return false;                     // loopback (127.x.x.x)
+  if (parts[0] === 169 && parts[1] === 254) return false; // APIPA (169.254.x.x)
+  if (ip === "0.0.0.0") return false;
+  if (ip === "255.255.255.255") return false;
+  return true;
+}
+
 function detectErrorType(msg) {
   const networkWords = ["tempo esgotado","esgotado","falha","falhou","sem resposta","nao responde","nao respondeu","rede","cabo","conexao","conexão"];
   const ipWords = ["inacessivel","inacessível","ip errado","host inacessivel","destino inacessivel"];
@@ -685,11 +696,47 @@ router.post("/", async (req, res) => {
         reply = `"Tempo esgotado" significa que o computador não está alcançando esse endereço — pode ser IP errado ou problema de rede 🌐\n\nPrimeiro vamos confirmar o IP correto:\n1. Abre o *cmd*\n2. Digita *ipconfig*\n3. Me manda o número do *Endereço IPv4*\n\nÉ um número tipo *192.168.x.x* 😊`;
       }
 
+      // IP especial (APIPA / loopback) — não serve para configurar
+      else if (ipTeach && !isValidConfigIP(ipTeach)) {
+        reply = (
+          `Hmm, *${ipTeach}* é um endereço especial que não funciona para configurar o microterminal 😕\n\n` +
+          `Precisamos do *Endereço IPv4* da máquina servidora — costuma ser algo como *192.168.x.x* ou *10.x.x.x*.\n\n` +
+          `No cmd, digita *ipconfig* e procura a linha *Endereço IPv4* (não IPv6) 😊\n\n` +
+          `Me manda o número quando encontrar!`
+        );
+      }
+
       else if (ipTeach) {
         session.ip = ipTeach;
         session.attempts = 0;
         session.step = "config_terminal";
         reply = buildConfigMsg(session.ip);
+      }
+
+      // Quer achar o IP no celular — redireciona para o computador
+      else if (msg.includes("celular") || msg.includes("telefone") || msg.includes("smartphone") || msg.includes("android") || msg.includes("iphone")) {
+        reply = (
+          `O IP que precisamos é do *computador servidor* — não do celular 😊\n\n` +
+          `No computador:\n1. Aperta *Windows + R*\n2. Digita *cmd* e Enter\n3. Digita *ipconfig* e Enter\n4. Procura *Endereço IPv4*\n\n` +
+          `Me manda o número quando achar 👍`
+        );
+      }
+
+      // Só aparece IPv6 e não IPv4 → guiar para o adaptador certo (antes de isNegative)
+      else if (
+        msg.includes("ipv6") && (
+          msg.includes("nao tem") || msg.includes("so tem") || msg.includes("so aparece") ||
+          msg.includes("nao aparece") || msg.includes("nao encontrei") || msg.includes("so ipv6")
+        )
+      ) {
+        reply = (
+          `Se só aparece IPv6 e não IPv4, é normal — significa que o adaptador atual não tem endereço IPv4 configurado 😊\n\n` +
+          `Procura no *ipconfig* pela seção:\n` +
+          `🔹 *Ethernet* ou *Local Area Connection* (cabo de rede)\n` +
+          `_(Pula as seções com "Tunnel Adapter" ou "Loopback")_\n\n` +
+          `Se tiver WiFi e cabo, usa o IPv4 do *cabo de rede* 👍\n\n` +
+          `Me manda o número quando encontrar!`
+        );
       }
 
       else if (await isNegative(msg)) {
@@ -767,6 +814,63 @@ router.post("/", async (req, res) => {
           `3️⃣ *Antes de ligar*, posicione o dedo já na tecla *P*\n` +
           `4️⃣ Ligue e pressione o *P imediatamente* assim que ligar\n\n` +
           `A janela dos pontinhos é bem rápida — com o dedo já posicionado fica muito mais fácil 😊`
+        );
+      }
+
+      // Usuário entrou no menu de configuração mas ainda está no meio do processo
+      // Distingue "entrei no menu de config" (mid-config) de "apareceu o menu" (sistema/sucesso)
+      else if (
+        msg.includes("menu") && (
+          (msg.includes("entrei") || msg.includes("entrou") || msg.includes("entrar")) ||
+          (msg.includes("consegui") && /entr/.test(msg)) ||
+          (msg.includes("configurac") || /\bconfig\b/.test(msg))
+        )
+      ) {
+        reply = (
+          `Ótimo, tá no caminho certo! 👍\n\n` +
+          `Agora siga os passos dentro do menu:\n\n` +
+          `4️⃣ Pressione *1* (IP do servidor)\n` +
+          `5️⃣ Digite o IP: *${session.ip}*\n` +
+          `6️⃣ Pressione *Enter*\n` +
+          `7️⃣ Pressione *H*\n` +
+          `8️⃣ Pressione *1* para salvar\n\n` +
+          `Me avisa como foi 😊`
+        );
+      }
+
+      // Errou o IP dentro do menu — orienta refazer
+      else if (
+        msg.includes("errei") ||
+        (msg.includes("errado") && msg.includes("ip")) ||
+        (msg.includes("errado") && msg.includes("digit")) ||
+        msg.includes("digitei errado") || msg.includes("coloquei errado")
+      ) {
+        reply = (
+          `Sem problema, é só refazer! 😊\n\n` +
+          `No menu:\n` +
+          `4️⃣ Pressione *1* (IP do servidor)\n` +
+          `5️⃣ Digite com calma: *${session.ip}*\n` +
+          `6️⃣ Pressione *Enter*\n` +
+          `7️⃣ Pressione *H*\n` +
+          `8️⃣ Pressione *1* para salvar\n\n` +
+          `_(Se precisar entrar no menu de novo: desligue, ligue e pressione P nos pontinhos)_ 👍`
+        );
+      }
+
+      // Está no menu e o sistema está pedindo para digitar o IP
+      else if (
+        msg.includes("pedindo") && (
+          msg.includes("ip") || msg.includes("numero") ||
+          msg.includes("número") || msg.includes("digitar") || msg.includes("digita")
+        )
+      ) {
+        reply = (
+          `Isso mesmo, agora digita o IP! 👍\n\n` +
+          `➡️ *${session.ip || "o IP do computador"}*\n\n` +
+          `Depois:\n` +
+          `6️⃣ Pressione *Enter*\n` +
+          `7️⃣ Pressione *H*\n` +
+          `8️⃣ Pressione *1* para salvar 😊`
         );
       }
 
