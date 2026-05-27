@@ -142,10 +142,24 @@ function buildHTML(data) {
       </div>`;
   }).join("");
 
+  // Converte timestamp UTC para horário de Brasília
+  function toBRTime(ts) {
+    if (!ts) return "";
+    try {
+      const d = new Date(ts);
+      const br = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit", month: "2-digit",
+        hour: "2-digit", minute: "2-digit",
+      }).format(d);
+      return br; // ex: "27/05 08:32"
+    } catch { return ts.slice(11, 16); }
+  }
+
   const clarRows = clarifications.length === 0
     ? `<tr><td colspan="3" style="text-align:center;color:#666;padding:20px">Nenhuma mensagem sem resposta 🎉</td></tr>`
     : clarifications.map(c => {
-        const time = c.ts ? c.ts.slice(11, 16) + " " + c.ts.slice(0, 10) : "";
+        const time = toBRTime(c.ts);
         const safeMsg = c.msg.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const id = (c.chatId || "").slice(-8);
         return `<tr><td>${time}</td><td>${id}</td><td>${safeMsg}</td></tr>`;
@@ -207,7 +221,7 @@ function buildHTML(data) {
 <header>
   <h1>🤖 ThR Chatbot</h1>
   <span class="badge">Analytics</span>
-  <span class="refresh-note">Última atualização: ${new Date().toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"})}</span>
+  <span class="refresh-note">Última atualização: ${new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date())}</span>
 </header>
 <main>
   <p class="section-title">Hoje</p>

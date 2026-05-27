@@ -53,7 +53,11 @@ export async function processMessage(message, chatId, from) {
     return "Memória resetada 🔄\n\nPode começar de novo quando quiser 😊";
   }
 
-  if (contemAlgum(msg, ["obrigado","obrigada","obg","valeu","tchau","até logo","flw","falou"])) {
+  if (contemAlgum(msg, [
+    "obrigado","obrigada","obg","valeu","tchau","xau",
+    "ate mais","até mais","ate logo","até logo","ate amanha","até amanhã",
+    "flw","falou","vlw","abraco","abraços","ateee","ate+","até+",
+  ])) {
     deleteSession(chatId);
     return pick(
       "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍",

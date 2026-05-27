@@ -327,6 +327,8 @@ export function isPositive(msg) {
     "ta conectando","tá conectando","subiu","voltou a funcionar",
     "otimo","ótimo","perfeito","exato","quero","ta bom",
     "tô vendo","to vendo","apareceu","está funcionando","ta funcionando",
+    "esta sim","está sim","sim ta","sim tá","sim esta","sim está",
+    "pode sim","claro","com certeza","certeza","positivo",
   ];
 
   const msgFinal = msg.trim();
@@ -352,7 +354,12 @@ export function isNegative(msg) {
 }
 
 export function isManualThanks(msg) {
-  return ["obrigado","obrigada","obg","valeu","agradecido","agradecida","tchau","tchauu"].some(w => msg.includes(w));
+  return [
+    "obrigado","obrigada","obg","valeu","agradecido","agradecida",
+    "tchau","tchauu","xau","ate mais","até mais","ate logo","até logo",
+    "ate+","até+","ateee","falou","flw","vlw","abraco","abraços",
+    "boa tarde a todos","boa noite a todos","ate amanha","até amanhã",
+  ].some(w => msg.includes(w));
 }
 
 export function looksLikeProblem(msg) {
@@ -476,6 +483,8 @@ export function isManualAffirmative(msg) {
     "entrou no menu","apareceu a tela","apareceu as opcoes",
     "conectando normalmente","conectou normalmente","esta conectando","está conectando",
     "ta conectando","tá conectando","subiu","voltou a funcionar",
+    "esta sim","está sim","sim ta","sim tá","sim esta","sim está",
+    "pode sim","claro","com certeza","certeza","positivo",
   ];
   const msgFinal = msg.trim();
   if (msgFinal.includes("descon") || msgFinal.startsWith("nao") || msgFinal.startsWith("não")) return false;
