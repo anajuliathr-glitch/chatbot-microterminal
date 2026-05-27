@@ -689,6 +689,55 @@ await t("192.168.1.1",s,"V41");
 await t("pressionau P agora apareceu o menu",s,"V42 pressionau+menu", any("1","pressione","digita","ip","salvar","h","caminho"));
 
 // ══════════════════════════════════════════════════════
+console.log("\n\n📦 BLOCO W — foi/não foi e variações reais");
+// ══════════════════════════════════════════════════════
+
+// "foi" exato em confirm_done → resolvido
+s=sid(); await t("oi",s,"W01"); await t("Bia",s,"W02");
+await t("nao conecta",s,"W03"); await t("10.0.0.1",s,"W04");
+await t("deu certo",s,"W05"); // → confirm_done
+await t("foi",s,"W06 foi exato → resolvido", any("boa","ótimo","funcionou","certo","feliz"));
+
+// "Foiiii" com letras repetidas → resolvido
+s=sid(); await t("oi",s,"W07"); await t("Car",s,"W08");
+await t("nao conecta",s,"W09"); await t("10.0.0.2",s,"W10");
+await t("deu certo",s,"W11");
+await t("Foiiii",s,"W12 Foiiii → resolvido", any("boa","ótimo","funcionou","certo","feliz"));
+
+// "foiii" → resolvido
+s=sid(); await t("oi",s,"W13"); await t("Dan",s,"W14");
+await t("nao conecta",s,"W15"); await t("10.0.0.3",s,"W16");
+await t("deu certo",s,"W17");
+await t("foiii",s,"W18 foiii → resolvido", any("boa","ótimo","funcionou","certo","feliz"));
+
+// "Aahh foiii" → resolvido
+s=sid(); await t("oi",s,"W19"); await t("Eva",s,"W20");
+await t("nao conecta",s,"W21"); await t("10.0.0.4",s,"W22");
+await t("deu certo",s,"W23");
+await t("Aahh foiii",s,"W24 Aahh foiii → resolvido", any("boa","ótimo","funcionou","certo","feliz"));
+
+// "nossa foi" → resolvido
+s=sid(); await t("oi",s,"W25"); await t("Fla",s,"W26");
+await t("nao conecta",s,"W27"); await t("10.0.0.5",s,"W28");
+await t("deu certo",s,"W29");
+await t("nossa foi",s,"W30 nossa foi → resolvido", any("boa","ótimo","funcionou","certo","feliz"));
+
+// "nao foi" em config_terminal → continuar tentando (negativo)
+s=sid(); await t("oi",s,"W31"); await t("Gil",s,"W32");
+await t("nao conecta",s,"W33"); await t("10.0.0.6",s,"W34");
+await t("nao foi",s,"W35 nao foi → negativo, continua", any("checar","cabo","ip","correto","confere","vamos","tentando","verifique","ainda","errado"));
+
+// "nao foiii" → negativo
+s=sid(); await t("oi",s,"W36"); await t("Hel",s,"W37");
+await t("nao conecta",s,"W38"); await t("10.0.0.7",s,"W39");
+await t("nao foiii",s,"W40 nao foiii → negativo", any("checar","cabo","ip","correto","confere","vamos","tentando","verifique","ainda","errado"));
+
+// "foi errado" → negativo (não deve celebrar)
+s=sid(); await t("oi",s,"W41"); await t("Isa",s,"W42");
+await t("nao conecta",s,"W43"); await t("10.0.0.8",s,"W44");
+await t("foi errado",s,"W45 foi errado → negativo", none("boa","ótimo","parabéns"));
+
+// ══════════════════════════════════════════════════════
 console.log("\n\n");
 console.log("═".repeat(55));
 const pct = Math.round(passed/total*100);
