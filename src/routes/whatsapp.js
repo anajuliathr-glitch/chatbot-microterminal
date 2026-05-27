@@ -5,7 +5,7 @@ import { analisarImagem } from "../services/ai.js";
 import { transcribeAudio } from "../services/transcription.js";
 import { getSession } from "../services/session.js";
 import { isEcho } from "../services/sent-tracker.js";
-import { getQRCode, getStatus } from "../services/whatsapp-client.js";
+import { getQRCode, getStatus, forceReconnect } from "../services/whatsapp-client.js";
 import config from "../config.js";
 
 const router = Router();
@@ -168,13 +168,27 @@ router.get("/status", (req, res) => {
   });
 });
 
+// ── Restart forçado da conexão WhatsApp ─────────────────────────────
+router.get("/restart", async (req, res) => {
+  try {
+    await forceReconnect();
+    res.redirect("/whatsapp/qrcode");
+  } catch (e) {
+    console.error("Erro no restart:", e.message);
+    res.redirect("/whatsapp/qrcode");
+  }
+});
+
 // ── QR Code para escanear com o WhatsApp ────────────────────────────
 router.get("/qrcode", (req, res) => {
   const status = getStatus();
 
+  const btnStyle = `display:inline-block;margin-top:16px;padding:12px 28px;background:#25d366;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px`;
+  const restartBtn = `<a href="/whatsapp/restart" style="${btnStyle}">🔄 Reiniciar conexão</a>`;
+
   if (status === "connected") {
     return res.send(`
-      <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+      <html><body style="font-family:sans-serif;text-align:center;padding:40px;background:#f0f0f0">
         <h2>✅ WhatsApp já está conectado!</h2>
         <p>O bot está online e pronto pra atender.</p>
       </body></html>
@@ -182,29 +196,38 @@ router.get("/qrcode", (req, res) => {
   }
 
   const qr = getQRCode();
+
+  // Sem QR ainda — mostra status e botão de restart
   if (!qr) {
+    const isStuck = status === "dead" || status === "error";
+    const msg = isStuck
+      ? `<p style="color:#c0392b;font-weight:bold">⚠️ A conexão travou (${status}). Clique em Reiniciar:</p>`
+      : `<p>Status: <strong>${status}</strong> — gerando QR, aguarde...</p>`;
+
     return res.send(`
       <html>
-      <head><meta http-equiv="refresh" content="5"></head>
-      <body style="font-family:sans-serif;text-align:center;padding:40px">
+      <head><meta http-equiv="refresh" content="4"></head>
+      <body style="font-family:sans-serif;text-align:center;padding:40px;background:#f0f0f0">
         <h2>⏳ Aguardando QR Code...</h2>
-        <p>Atualizando automaticamente em 5 segundos...</p>
-        <p>Status atual: <strong>${status}</strong></p>
+        ${msg}
+        ${restartBtn}
+        <p style="color:#888;margin-top:16px;font-size:13px">A página atualiza sozinha a cada 4 segundos</p>
       </body></html>
     `);
   }
 
-  // Exibe QR code usando API externa (sem precisar de pacote extra)
+  // QR disponível — exibe para escanear
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
   res.send(`
     <html>
     <head><meta http-equiv="refresh" content="15"></head>
-    <body style="font-family:sans-serif;text-align:center;padding:40px">
+    <body style="font-family:sans-serif;text-align:center;padding:40px;background:#f0f0f0">
       <h2>📱 Escaneie com o WhatsApp</h2>
       <p>Abra o WhatsApp → <strong>Aparelhos conectados</strong> → <strong>Conectar aparelho</strong></p>
-      <img src="${qrUrl}" style="margin:20px auto;display:block;border:1px solid #ccc;padding:10px;border-radius:8px"/>
-      <p style="color:#888">O QR renova automaticamente a cada 15 segundos 🔄</p>
-      <p style="color:#888;font-size:12px">Assim que escanear, a página muda automaticamente ✅</p>
+      <img src="${qrUrl}" style="margin:20px auto;display:block;border:3px solid #25d366;padding:10px;border-radius:12px;background:#fff"/>
+      <p style="color:#888">O QR renova a cada 15 segundos 🔄</p>
+      ${restartBtn}
+      <p style="color:#888;font-size:12px;margin-top:8px">Assim que escanear, a página muda automaticamente ✅</p>
     </body></html>
   `);
 });

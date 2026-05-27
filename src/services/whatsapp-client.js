@@ -62,6 +62,20 @@ export async function closeClient() {
   messageQueue.length = 0;
 }
 
+/** Força reinício da conexão — útil quando status é "dead" ou "error" */
+export async function forceReconnect() {
+  console.log("🔄 Force reconnect solicitado...");
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  if (sock) {
+    try { sock.end(); } catch {}
+    sock = null;
+  }
+  reconnectAttempt = 0;
+  qrCodeData = null;
+  connectionStatus = "disconnected";
+  await initializeClient();
+}
+
 // ── Inicialização principal ───────────────────────────────────────
 
 export async function initializeClient() {
