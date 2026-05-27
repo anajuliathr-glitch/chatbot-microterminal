@@ -95,6 +95,12 @@ export function normalizar(text) {
     .replace(/\bsium\b/g, "sim")
     .replace(/\bxim\b/g, "sim")
 
+    // ── "foi" com letras repetidas ────────────────────────────────
+    .replace(/\bfo+i+\b/g, "foi")    // foii, foiii, foiiii → foi
+
+    // ── "deu" com letras repetidas ────────────────────────────────
+    .replace(/\bde+u+\b/g, "deu")    // deuuu, deuuu → deu
+
     // ── typos de "ainda" ─────────────────────────────────────────
     .replace(/\baind[sa]?\b/g, "ainda")
 
@@ -314,6 +320,8 @@ export function isPositive(msg) {
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
   if (["foi","deu","conectou","funcionou","resolveu"].includes(msg.trim())) return true;
+  // "foi" / "deu" ao final: "aahh foi", "nossa foi", "finalmente deu" etc.
+  if (/\bfoi$/.test(msg.trim()) || /\bdeu$/.test(msg.trim())) return true;
 
   const parciais = [
     "agora foi","agora deu","deu certo","foi sim",
@@ -476,6 +484,7 @@ export function isManualAffirmative(msg) {
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
   if (["foi","deu","conectou","funcionou","resolveu"].includes(msg.trim())) return true;
+  if (/\bfoi$/.test(msg.trim()) || /\bdeu$/.test(msg.trim())) return true;
   const parciais = [
     "agora foi","agora deu","deu certo","foi sim",
     "funcionou","resolveu","resolvido","consegui","conectou",
