@@ -316,9 +316,9 @@ function loginHTML(error = false) {
 }
 
 // ── Routes ────────────────────────────────────────────────────────────
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   if (!isAuthenticated(req)) return res.send(loginHTML());
-  const events = readEvents(7);
+  const events = await readEvents(7);
   const data = processAnalytics(events);
   res.send(buildHTML(data));
 });
@@ -339,9 +339,9 @@ router.get("/logout", (req, res) => {
 });
 
 // ── JSON data API ─────────────────────────────────────────────────────
-router.get("/data", (req, res) => {
+router.get("/data", async (req, res) => {
   if (!isAuthenticated(req)) return res.status(401).json({ error: "Unauthorized" });
-  const events = readEvents(7);
+  const events = await readEvents(7);
   const data = processAnalytics(events);
   res.json(data);
 });
