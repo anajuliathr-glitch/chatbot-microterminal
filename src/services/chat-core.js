@@ -306,6 +306,10 @@ export function buildConfigMsg(ip, soPassos = false) {
 export function isPositive(msg) {
   if (isNegative(msg)) return false;
   if (/\bnenhum[ao]?\b|\bnada\b/.test(msg)) return false;
+  // Sinais claros de problema — nunca são positivos
+  if (msg.includes("tela preta") || msg.includes("tela apagada") ||
+      msg.includes("nao conectou") || msg.includes("não conectou") ||
+      msg.includes("nao funciona") || msg.includes("nao conecta")) return false;
 
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
@@ -466,6 +470,9 @@ export function isManualNegative(msg) {
 export function isManualAffirmative(msg) {
   if (isManualNegative(msg)) return false;
   if (/\bnenhum[ao]?\b|\bnada\b/.test(msg)) return false;
+  if (msg.includes("tela preta") || msg.includes("tela apagada") ||
+      msg.includes("nao conectou") || msg.includes("não conectou") ||
+      msg.includes("nao funciona") || msg.includes("nao conecta")) return false;
   const exatos = ["sim","simm","ss","s","aham","uhum","fiz"];
   if (exatos.some(w => msg.trim() === w)) return true;
   if (["foi","deu","conectou","funcionou","resolveu"].includes(msg.trim())) return true;
@@ -1058,6 +1065,19 @@ export async function processConversation(msg, rawMessage, session, options = {}
           `7️⃣ Pressione *H*\n` +
           `8️⃣ Pressione *1* para salvar\n\n` +
           `_(Se precisar entrar no menu de novo: desligue, ligue e pressione P nos pontinhos)_ 👍`
+        );
+        break;
+      }
+
+      // Tela preta — problema, nunca positivo
+      if (msg.includes("tela preta") || msg.includes("tela apagada") || msg.includes("aparece preta")) {
+        session.attempts = Math.min((session.attempts || 0) + 1, 99);
+        reply = (
+          `Tela preta depois de configurar geralmente é IP errado ou cabo solto 🔌\n\n` +
+          `🔹 *Confere o IP* — roda o \`ipconfig\` no computador e confirma se é *${session.ip || "o IP que usou"}*\n` +
+          `🔹 *Tira e recoloca o cabo de rede* do microterminal\n` +
+          `_(Se o computador tiver WiFi e cabo, usa o IP do cabo de rede)_\n\n` +
+          `Tenta de novo e me avisa 😊`
         );
         break;
       }
