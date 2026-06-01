@@ -58,6 +58,7 @@ export async function processMessage(message, chatId, from) {
     "ate mais","até mais","ate logo","até logo","ate amanha","até amanhã",
     "flw","falou","vlw","abraco","abraços","ateee","ate+","até+",
   ])) {
+    if (!session) return null; // sessão já encerrada — não responde de novo
     deleteSession(chatId);
     return pick(
       "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍",
