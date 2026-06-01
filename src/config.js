@@ -20,5 +20,7 @@ export default {
   // Geral
   groqKey: process.env.GROQ_API_KEY || "",   // preferido para transcrição (grátis)
   openaiKey: process.env.OPENAI_API_KEY || "", // fallback legado
+  openrouterKey: process.env.OPENROUTER_API_KEY || "",
+  openrouterModel: process.env.OPENROUTER_MODEL || "meta-llama/llama-4-maverick:free",
   supportPhone: process.env.SUPPORT_PHONE || "",
 };
