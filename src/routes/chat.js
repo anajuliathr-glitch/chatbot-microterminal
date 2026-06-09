@@ -133,7 +133,8 @@ router.post("/", async (req, res) => {
     }
 
     // Só reseta se estiver em ask_name ou final (não no meio do atendimento)
-    if (session && await isNewIntent(msg) && ["ask_name", "final"].includes(session.step)) {
+    // Só reseta no step "final" — nunca em "ask_name" (qualquer texto é um nome válido)
+    if (session && session.step === "final" && await isNewIntent(msg)) {
       deleteSession(session_id);
       session = null;
     }
