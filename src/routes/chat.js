@@ -71,7 +71,7 @@ async function isNeutral(msg) {
 // ── Express route ─────────────────────────────────────────────────
 router.post("/", async (req, res) => {
   try {
-    const { message, session_id, image } = req.body || {};
+    const { message, session_id, image, contact_name } = req.body || {};
     if (!message || !session_id) {
       return res.status(400).send("Faltando dados");
     }
@@ -140,7 +140,11 @@ router.post("/", async (req, res) => {
     }
 
     if (!session) {
-      session = { step: "start", name: null, ip: null, attempts: 0, lastInteraction: now };
+      // Se o SAC já conhece o nome (via perfil WhatsApp), pré-popula para pular a pergunta
+      const cleanName = contact_name && !/^\+?\d+$/.test(contact_name.trim())
+        ? contact_name.split(' ')[0].charAt(0).toUpperCase() + contact_name.split(' ')[0].slice(1).toLowerCase()
+        : null;
+      session = { step: "start", name: cleanName, ip: null, attempts: 0, lastInteraction: now };
     }
 
     // Handle "neutral" catch-all before delegating

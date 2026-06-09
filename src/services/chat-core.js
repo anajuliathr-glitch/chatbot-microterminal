@@ -603,20 +603,29 @@ export async function processConversation(msg, rawMessage, session, options = {}
 
     // ── start ────────────────────────────────────────────────────
     case "start": {
-      session.step = "ask_name";
       const s = saudacaoHorario();
-      if (isBusinessHours()) {
-        reply = pick(
-          `${s}! 😊 Sou a assistente virtual do microterminal da ThR.\n\nQual seu nome?`,
-          `${s}! 👋 Aqui é a assistente da ThR — estou aqui pra te ajudar com o microterminal!\n\nQual seu nome pra começar?`,
-          `${s}! 😄 Pode me chamar de assistente ThR, sou responsável pelo suporte do microterminal.\n\nQual seu nome? 👍`,
-        );
+      if (session.name) {
+        // Nome já conhecido (veio do perfil WhatsApp) — pula direto para o problema
+        session.step = "ask_problem";
+        const intro = isBusinessHours()
+          ? `${s}! 😊 Sou a assistente virtual do microterminal da ThR.`
+          : MSG_FORA_HORARIO.trim();
+        reply = `${intro}\n\nPrazer, ${session.name}! 👋 Pode me dizer o que aconteceu com o microterminal?`;
       } else {
-        reply = `${MSG_FORA_HORARIO}${pick(
-          `Qual seu nome?`,
-          `Me conta qual seu nome pra começar 😊`,
-          `Qual seu nome? 😊`,
-        )}`;
+        session.step = "ask_name";
+        if (isBusinessHours()) {
+          reply = pick(
+            `${s}! 😊 Sou a assistente virtual do microterminal da ThR.\n\nQual seu nome?`,
+            `${s}! 👋 Aqui é a assistente da ThR — estou aqui pra te ajudar com o microterminal!\n\nQual seu nome pra começar?`,
+            `${s}! 😄 Pode me chamar de assistente ThR, sou responsável pelo suporte do microterminal.\n\nQual seu nome? 👍`,
+          );
+        } else {
+          reply = `${MSG_FORA_HORARIO}${pick(
+            `Qual seu nome?`,
+            `Me conta qual seu nome pra começar 😊`,
+            `Qual seu nome? 😊`,
+          )}`;
+        }
       }
       break;
     }
