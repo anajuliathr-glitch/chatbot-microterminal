@@ -117,14 +117,17 @@ router.post("/", async (req, res) => {
     // Agradecimento / encerramento
     if (await isThanks(msg)) {
       if (!session) {
-        return res.send("");
+        return res.json({ response: '', ended: true });
       }
       deleteSession(session_id);
-      return res.send(pick(
-        `Por nada 😊\n\nSe precisar, é só chamar! 👍`,
-        `Por nada! 😄\n\nQualquer coisa, é só chamar 👍`,
-        `Por nada, fico feliz em ter ajudado! 😊\n\nEstou sempre por aqui, é só chamar 👍`,
-      ));
+      return res.json({
+        response: pick(
+          `Por nada 😊\n\nSe precisar, é só chamar! 👍`,
+          `Por nada! 😄\n\nQualquer coisa, é só chamar 👍`,
+          `Por nada, fico feliz em ter ajudado! 😊\n\nEstou sempre por aqui, é só chamar 👍`,
+        ),
+        ended: true,
+      });
     }
 
     if (session && now - session.lastInteraction > config.sessionTimeout) {
@@ -172,7 +175,7 @@ router.post("/", async (req, res) => {
 
     if (shouldDelete) {
       deleteSession(session_id);
-      return res.send(reply);
+      return res.json({ response: reply, ended: true });
     }
 
     if (updatedSession) {
