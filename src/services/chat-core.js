@@ -648,6 +648,24 @@ export async function processConversation(msg, rawMessage, session, options = {}
         return { reply: `Tudo certo! 😊\n\nSe precisar de ajuda com o microterminal, é só chamar 👍`, session: null, shouldDelete: true };
       }
 
+      // Se a mensagem parece descrição de problema, pula a pergunta de nome
+      if (looksLikeProblem(msg) || isVagueProblem(msg)) {
+        const ipDireto = extrairIP(msg);
+        if (ipDireto) {
+          session.ip = ipDireto;
+          session.attempts = 0;
+          session.step = "config_terminal";
+          reply = buildConfigMsg(session.ip);
+        } else {
+          session.step = "ask_ip";
+          reply = pick(
+            `Entendi! Vamos verificar a configuração 👍\n\nVocê sabe o IP do computador?`,
+            `Certo! Para resolver, preciso do IP do computador.\n\nVocê sabe qual é?`,
+          );
+        }
+        break;
+      }
+
       const nomeAsk = extrairNome(rawMessage);
       if (!nomeAsk) {
         reply = `Pode me dizer seu nome? 😊`;

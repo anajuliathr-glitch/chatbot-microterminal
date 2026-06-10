@@ -160,7 +160,7 @@ router.post("/", async (req, res) => {
     }
 
     // Delegate to shared core
-    const { reply, session: updatedSession, shouldDelete } = await processConversation(
+    const { reply, session: updatedSession, shouldDelete, isTransfer } = await processConversation(
       msg,
       message,
       session,
