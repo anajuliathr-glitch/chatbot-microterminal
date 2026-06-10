@@ -1220,6 +1220,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
           reply: `Feito! ✅\n\nVocê está na fila de suporte da ThR.\n\n${contatoMsg}\n\nQualquer dúvida, é só chamar!`,
           session: null,
           shouldDelete: true,
+          isTransfer: true,
         };
       } else if (!descrevePersistencia && await checkNegative(msg)) {
         session.step = "config_terminal";

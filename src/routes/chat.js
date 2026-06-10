@@ -175,7 +175,7 @@ router.post("/", async (req, res) => {
 
     if (shouldDelete) {
       deleteSession(session_id);
-      return res.json({ response: reply, ended: true });
+      return res.json({ response: reply, ended: true, transfer: isTransfer === true });
     }
 
     if (updatedSession) {
