@@ -205,9 +205,6 @@ export async function analisarImagem(base64) {
     return text;
   } catch (e) {
     console.error("[analisarImagem] ERRO COMPLETO:", e.message);
-    if (e.message?.includes("Invalid image") || e.message?.includes("image")) {
-      return "A imagem não é válida 😕\n\nPode descrever o que aparece na tela? 👍";
-    }
-    return "⚠️ Tive um problema ao analisar a imagem\n\nPode descrever o que está acontecendo? 😊";
+    return "Recebi sua imagem! 📸\n\nPode descrever o que aparece na tela? Assim consigo te ajudar melhor 😊";
   }
 }
