@@ -579,6 +579,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
     isAffirmativeFn = null,
     isNegativeFn = null,
     chatId = null,
+    imageAnalysis = false,
   } = options;
 
   // ── Analytics instrumentation ──────────────────────────────────────
@@ -729,7 +730,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
       }
 
       // Foto/print
-      if (wantsToSendPhoto(msg)) {
+      if (!imageAnalysis && wantsToSendPhoto(msg)) {
         reply = `Claro, pode mandar! 📸\n\nSó que pelo chat de texto eu não consigo receber imagens diretamente.\n\nMe descreve o que aparece? Por exemplo:\n- Tem alguma mensagem de erro na tela?\n- Alguma luz diferente acesa no equipamento?\n- A tela está preta, travada ou piscando?\n\nAssim já consigo te ajudar 😊`;
         break;
       }
@@ -1017,7 +1018,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
       }
 
       // Foto
-      if (wantsToSendPhoto(msg)) {
+      if (!imageAnalysis && wantsToSendPhoto(msg)) {
         reply = `Pelo chat de texto não consigo receber imagens 😊\n\nPode descrever o que aparece na tela do microterminal? Por exemplo, tem alguma mensagem de erro? 👍`;
         break;
       }

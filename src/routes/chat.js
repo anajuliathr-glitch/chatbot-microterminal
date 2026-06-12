@@ -174,6 +174,7 @@ router.post("/", async (req, res) => {
         isAffirmativeFn,
         isNegativeFn,
         chatId: session_id,
+        imageAnalysis: !!image_analysis,
       },
     );
 
