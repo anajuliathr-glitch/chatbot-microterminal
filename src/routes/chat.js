@@ -13,6 +13,8 @@ import {
   isManualNegative,
   isManualNeutral,
   isManualNoProblem,
+  looksLikeProblem,
+  isVagueProblem,
   pick,
 } from "../services/chat-core.js";
 
@@ -43,6 +45,8 @@ async function isNewIntent(msg) {
 }
 
 async function isThanks(msg) {
+  // Nunca classifica como agradecimento se a mensagem descreve um problema
+  if (looksLikeProblem(msg) || isVagueProblem(msg) || isManualNegative(msg)) return false;
   const ai = await classificar(msg);
   if (ai === "agradecimento") return true;
   return isManualThanks(msg);
@@ -71,7 +75,7 @@ async function isNeutral(msg) {
 // ── Express route ─────────────────────────────────────────────────
 router.post("/", async (req, res) => {
   try {
-    const { message, session_id, image, contact_name } = req.body || {};
+    const { message, session_id, image, contact_name, image_analysis } = req.body || {};
     if (!message || !session_id) {
       return res.status(400).send("Faltando dados");
     }
@@ -106,8 +110,8 @@ router.post("/", async (req, res) => {
       return res.send(`Aqui pelo chat não consigo receber áudios 😊\n\nPode digitar o que você queria falar que te ajudo normalmente 👍`);
     }
 
-    // Foto/imagem — responde igual em qualquer step
-    if (wantsToSendPhoto(msg)) {
+    // Foto/imagem — responde igual em qualquer step (exceto quando é análise prévia do SAC API)
+    if (!image_analysis && wantsToSendPhoto(msg)) {
       return res.send(`Ainda não consigo receber imagens por aqui 😊\n\nMas pode descrever o que aparece na tela que eu te ajudo a identificar o problema 👍`);
     }
 
