@@ -177,10 +177,8 @@ export async function analisarImagem(base64) {
     let text;
 
     if (useOpenRouter) {
-      // OpenRouter: formato OpenAI com image_url
       text = await openrouterCall({
-        // 120b tem capacidade de visão
-        model: "openai/gpt-oss-120b:free",
+        model: "google/gemini-2.0-flash-exp:free",
         system: "Você é uma assistente de suporte técnico de microterminal. Analise a imagem e explique o problema de forma simples em português.",
         userContent: [
           { type: "image_url", image_url: { url: base64 } },
