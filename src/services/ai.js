@@ -177,8 +177,9 @@ export async function analisarImagem(base64) {
     let text;
 
     if (useOpenRouter) {
+      const visionModel = process.env.OPENROUTER_MODEL_VISION || "meta-llama/llama-4-maverick:free";
       text = await openrouterCall({
-        model: "google/gemini-2.0-flash-exp:free",
+        model: visionModel,
         system: "Você é uma assistente de suporte técnico de microterminal. Analise a imagem e explique o problema de forma simples em português.",
         userContent: [
           { type: "image_url", image_url: { url: base64 } },
@@ -203,7 +204,7 @@ export async function analisarImagem(base64) {
 
     return text;
   } catch (e) {
-    console.error("Erro imagem:", e.message);
+    console.error("[analisarImagem] ERRO COMPLETO:", e.message);
     if (e.message?.includes("Invalid image") || e.message?.includes("image")) {
       return "A imagem não é válida 😕\n\nPode descrever o que aparece na tela? 👍";
     }
