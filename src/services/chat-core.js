@@ -546,6 +546,7 @@ export function isVagueProblem(msg) {
     "quebrou","quebrando","com erro","deu erro",
     "nao consigo conectar","nao consigo acessar","nao consigo entrar",
     "nao esta conectando","nao ta conectando","nao esta funcionando",
+    "nao estaconectando","naoestaconectando","naoconecta","naoconectando",
     "problema na rede","problema de rede","sem conexao","sem internet",
     "fora do ar","fora do sistema","nao sobe",
   ].some(w => msg.includes(w));
@@ -741,6 +742,16 @@ export async function processConversation(msg, rawMessage, session, options = {}
         reply = pick(
           `Tela preta geralmente tem solução rápida, ${session.name}! 😊\n\n🔌 Primeiro conferes:\n• O cabo de vídeo está bem encaixado nos dois lados?\n• O microterminal está ligado na tomada?\n• A TV/monitor está na entrada certa?\n\nSe tudo estiver ok e continuar sem imagem, vamos checar a configuração de rede 👇\n\nVocê sabe o IP do computador?`,
           `Entendido, ${session.name}! 📺 Tela preta pode ser coisa simples:\n\n1️⃣ Confere o *cabo de vídeo* — tira e recoloca firme\n2️⃣ Verifica se o *microterminal está ligado* na tomada\n3️⃣ Testa a *entrada correta* na TV ou monitor\n\nSe continuar, vamos verificar a rede também 👇\n\nVocê tem o IP do computador?`,
+        );
+        break;
+      }
+
+      // Pontinhos / tela de boot do microterminal (tentando conectar ao servidor)
+      if (contemAlgum(msg, ["pontinhos","pontinho","pontos piscando","tela com pontos","aparecendo pontos","pontos na tela","nao sai dos pontos","nao sai da tela","nao sai dessa tela","nao sai daí","nao passa dessa tela"])) {
+        session.step = "ask_ip";
+        reply = pick(
+          `Entendi, ${session.name}! 😊 Quando aparecem os pontinhos e o terminal não avança, geralmente é um problema de IP — ele não está conseguindo se comunicar com o servidor.\n\nVamos resolver! Você sabe o IP do computador?`,
+          `Esse comportamento com pontinhos acontece quando o microterminal não consegue conectar ao servidor, ${session.name}! 👇\n\nNormalmente resolvemos ajustando o IP de rede.\n\nVocê tem o IP do servidor em mãos?`,
         );
         break;
       }
