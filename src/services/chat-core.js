@@ -785,37 +785,15 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
-      // Problema vago mas reconhecível
-      if (isVagueProblem(msg)) {
-        session.step = "ask_ip";
-        reply = `Entendi, vamos resolver isso 👍\n\nVocê sabe o IP do computador?`;
-        break;
-      }
-
-      // RAG / clarificação
-      {
-        const respostaRAG = await responderComRAG(rawMessage, session.name);
-        if (respostaRAG) {
-          session.step = "rag_followup";
-          reply = `${respostaRAG}\n\n---\nIsso resolveu seu problema? 😊`;
-        } else if (!session.clarificationAsked) {
-          session.clarificationAsked = true;
-          logEvent({ type: "clarification", chatId, msg: msg.slice(0, 120) });
-          reply = (
-            `Hmm, não entendi muito bem 😊\n\n` +
-            `Pode me contar melhor o que está acontecendo com o microterminal?\n\n` +
-            `Por exemplo:\n` +
-            `• O terminal está desconectado / não conecta na rede?\n` +
-            `• Aparece alguma mensagem de erro na tela?\n` +
-            `• É uma dúvida sobre como configurar?\n` +
-            `• Outra coisa?\n\n` +
-            `Com mais detalhes consigo te ajudar melhor 👍`
-          );
-        } else {
-          session.step = "ask_ip";
-          reply = `Entendido! Vamos verificar a configuração 👍\n\nVocê sabe o IP do computador?`;
-        }
-      }
+      // Qualquer outro problema descrito → vai para ask_ip
+      // O IP é o ponto de partida para resolver 90%+ dos problemas do microterminal.
+      // Não usar RAG aqui para não gerar resposta genérica fora do fluxo.
+      session.step = "ask_ip";
+      reply = pick(
+        `Entendi, vamos resolver isso 👍\n\nPrimeiro preciso do IP do computador servidor.\n\nVocê sabe o IP?`,
+        `Anotado, ${session.name}! Para verificar a configuração do microterminal, preciso do IP do servidor.\n\nVocê tem esse IP em mãos?`,
+        `Certo, ${session.name}! A maioria dos problemas do microterminal a gente resolve pelo IP de rede 👇\n\nVocê sabe o IP do computador?`,
+      );
       break;
     }
 
