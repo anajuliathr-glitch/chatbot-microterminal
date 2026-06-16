@@ -341,6 +341,8 @@ export function isPositive(msg) {
     "tô vendo","to vendo","apareceu","está funcionando","ta funcionando",
     "esta sim","está sim","sim ta","sim tá","sim esta","sim está",
     "pode sim","claro","com certeza","certeza","positivo",
+    "certo","certinho","correto","show","beleza","boa","tranquilo",
+    "maravilha","top","legal","entendi","ok sim","som","isos","isso sim",
   ];
 
   const msgFinal = msg.trim();
@@ -501,6 +503,8 @@ export function isManualAffirmative(msg) {
     "ta conectando","tá conectando","subiu","voltou a funcionar",
     "esta sim","está sim","sim ta","sim tá","sim esta","sim está",
     "pode sim","claro","com certeza","certeza","positivo",
+    "certo","certinho","correto","show","beleza","boa","tranquilo",
+    "maravilha","top","legal","entendi","ok sim","som","isso sim",
   ];
   const msgFinal = msg.trim();
   if (msgFinal.includes("descon") || msgFinal.startsWith("nao") || msgFinal.startsWith("não")) return false;
@@ -1123,11 +1127,18 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
-      // Afirmativo — funcionou
+      // Afirmativo — funcionou → resolve direto, sem pedir confirmação extra
       if (await checkPositive(msg)) {
-        session.step = "confirm_done";
-        reply = `Boa 👍\n\nSó pra confirmar: está funcionando normalmente agora? 😊`;
-        break;
+        logEvent({ type: "resolved", chatId, name: session.name, ip: session.ip });
+        return {
+          reply: pick(
+            `Boa ${session.name}! 🎉 Já está tudo funcionando!\n\nQualquer coisa, é só chamar 😄`,
+            `Boa ${session.name}! 🙌 Fico feliz que deu certo!\n\nEstou aqui se precisar 😊`,
+            `Perfeito ${session.name}! ✅ Problema resolvido!\n\nQualquer dúvida, é só me chamar 👍`,
+          ),
+          session: null,
+          shouldDelete: true,
+        };
       }
 
       // Negativo — não funcionou
