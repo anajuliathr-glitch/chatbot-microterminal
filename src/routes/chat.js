@@ -110,11 +110,6 @@ router.post("/", async (req, res) => {
       return res.send(`Aqui pelo chat não consigo receber áudios 😊\n\nPode digitar o que você queria falar que te ajudo normalmente 👍`);
     }
 
-    // Foto/imagem — responde igual em qualquer step (exceto quando é análise prévia do SAC API)
-    if (!image_analysis && wantsToSendPhoto(msg)) {
-      return res.send(`Ainda não consigo receber imagens por aqui 😊\n\nMas pode descrever o que aparece na tela que eu te ajudo a identificar o problema 👍`);
-    }
-
     let session = getSession(session_id);
     const now = Date.now();
 
