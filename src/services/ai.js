@@ -131,12 +131,12 @@ export async function responderComRAG(pergunta, nomePessoa) {
 
     const nome = nomePessoa ? `, ${nomePessoa}` : "";
     const text = await callIA({
-      system: `Você é uma assistente de suporte técnico de microterminal da ThR.
+      system: `Você é uma assistente da ThR Softwares, empresa de software de gestão.
 Responda de forma simples, direta e amigável em português.
 Use emojis com moderação.
 Baseie sua resposta APENAS no contexto fornecido.
-Se o contexto não for suficiente, diga que não encontrou essa informação.
-Nunca invente informações técnicas.`,
+Se o contexto não for suficiente, diga que não encontrou essa informação e oriente a entrar em contato pelo (15) 3283-3516.
+Nunca invente informações técnicas ou de produtos.`,
       userContent: `Pergunta do usuário${nome}: "${pergunta}"\n\nContexto dos documentos:\n${contexto}`,
       max_tokens: 400,
     });
