@@ -1,116 +1,58 @@
-import Database from "better-sqlite3";
+/**
+ * Sessões persistidas no Upstash Redis — sobrevivem a restarts do Render.
+ * Cache em memória para velocidade dentro da mesma instância.
+ */
 
-// Cache em memória — garante sessão mesmo que SQLite falhe ou processo reinicie dentro da mesma instância
+const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const SESSION_TTL_SECONDS = 24 * 60 * 60; // 24h
+
 const memoryCache = new Map();
 
-let db = null;
-let insertStmt, getStmt, deleteStmt, cleanStmt;
+function key(id) { return `session:${id}`; }
 
-try {
-  db = new Database("./sessions.db");
-  db.pragma("journal_mode = WAL");
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      step TEXT NOT NULL DEFAULT 'start',
-      name TEXT,
-      ip TEXT,
-      attempts INTEGER NOT NULL DEFAULT 0,
-      lastInteraction INTEGER NOT NULL,
-      data TEXT
-    )
-  `);
-  insertStmt = db.prepare(`
-    INSERT OR REPLACE INTO sessions (id, step, name, ip, attempts, lastInteraction, data)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  getStmt    = db.prepare("SELECT * FROM sessions WHERE id = ?");
-  deleteStmt = db.prepare("DELETE FROM sessions WHERE id = ?");
-  cleanStmt  = db.prepare("DELETE FROM sessions WHERE lastInteraction < ?");
-  console.log("✅ Banco de sessões inicializado");
-} catch (e) {
-  console.warn("⚠️ SQLite indisponível — usando apenas memória:", e.message);
+async function redisCall(method, ...args) {
+  if (!REDIS_URL || !REDIS_TOKEN) return null;
+  try {
+    const url = `${REDIS_URL}/${[method, ...args.map(a => encodeURIComponent(JSON.stringify(a)))].join('/')}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${REDIS_TOKEN}` } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.result ?? null;
+  } catch { return null; }
 }
 
-const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 180000; // mínimo 3 min
-
-export function getSession(id) {
-  // 1. Tenta memória primeiro (mais rápido e confiável dentro da mesma instância)
-  if (memoryCache.has(id)) {
-    return memoryCache.get(id);
-  }
-  // 2. Fallback para SQLite (caso processo tenha reiniciado)
-  if (!db) return null;
+export async function getSessionAsync(id) {
+  if (memoryCache.has(id)) return memoryCache.get(id);
+  const raw = await redisCall('GET', key(id));
+  if (!raw) return null;
   try {
-    const row = getStmt.get(id);
-    if (!row) return null;
-    const session = {
-      step: row.step,
-      name: row.name,
-      ip: row.ip,
-      attempts: row.attempts,
-      lastInteraction: row.lastInteraction,
-      ...(row.data ? JSON.parse(row.data) : {}),
-    };
-    // Recarrega no cache de memória
+    const session = JSON.parse(raw);
     memoryCache.set(id, session);
     return session;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-export function saveSession(id, session) {
-  // Sempre salva em memória primeiro
+export async function saveSessionAsync(id, session) {
   memoryCache.set(id, { ...session });
-
-  // Persiste no SQLite em background (não bloqueia)
-  if (!db) return;
-  try {
-    // Campos extras (ex: clarificationAsked) vão para a coluna data como JSON
-    const { step, name, ip, attempts, lastInteraction, ...extras } = session;
-    const dataJson = Object.keys(extras).length ? JSON.stringify(extras) : null;
-    insertStmt.run(
-      id,
-      step || "start",
-      name || null,
-      ip || null,
-      attempts || 0,
-      lastInteraction || Date.now(),
-      dataJson
-    );
-  } catch (e) {
-    console.error("Erro ao salvar sessão no SQLite:", e.message);
-  }
+  await redisCall('SETEX', key(id), SESSION_TTL_SECONDS, JSON.stringify(session));
 }
 
-export function deleteSession(id) {
+export async function deleteSessionAsync(id) {
   memoryCache.delete(id);
-  if (!db) return;
-  try {
-    deleteStmt.run(id);
-  } catch {}
+  await redisCall('DEL', key(id));
 }
 
+// Compatibilidade síncrona (só memória) — usada em contextos não-async
+export function getSession(id) { return memoryCache.get(id) ?? null; }
+export function saveSession(id, session) { memoryCache.set(id, { ...session }); saveSessionAsync(id, session); }
+export function deleteSession(id) { memoryCache.delete(id); deleteSessionAsync(id); }
+
+export function getAllSessions() { return new Map(memoryCache); }
 export function cleanExpiredSessions() {
-  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-  // Limpa memória
-  for (const [id, session] of memoryCache) {
-    if ((session.lastInteraction || 0) < cutoff) memoryCache.delete(id);
+  const cutoff = Date.now() - SESSION_TTL_SECONDS * 1000;
+  for (const [id, s] of memoryCache) {
+    if ((s.lastInteraction || 0) < cutoff) memoryCache.delete(id);
   }
-  // Limpa SQLite
-  if (!db) return;
-  try {
-    const result = cleanStmt.run(cutoff);
-    if (result.changes > 0) console.log(`🧹 ${result.changes} sessões expiradas removidas`);
-  } catch {}
 }
-
-/** Retorna cópia de todas as sessões em memória (para o session-watcher) */
-export function getAllSessions() {
-  return new Map(memoryCache);
-}
-
-export function close() {
-  try { db?.close(); } catch {}
-}
+export function close() {}

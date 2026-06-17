@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { log } from "../services/logger.js";
 import { responderComRAG, analisarImagem, classificarIntencao } from "../services/ai.js";
-import { getSession, saveSession, deleteSession } from "../services/session.js";
+import { getSessionAsync, saveSessionAsync, deleteSessionAsync, getSession, saveSession, deleteSession } from "../services/session.js";
 import config from "../config.js";
 import {
   processConversation,
@@ -110,7 +110,7 @@ router.post("/", async (req, res) => {
       return res.send(`Aqui pelo chat não consigo receber áudios 😊\n\nPode digitar o que você queria falar que te ajudo normalmente 👍`);
     }
 
-    let session = getSession(session_id);
+    let session = await getSessionAsync(session_id);
     const now = Date.now();
 
     // Agradecimento / encerramento
@@ -118,7 +118,7 @@ router.post("/", async (req, res) => {
       if (!session) {
         return res.json({ response: '', ended: true });
       }
-      deleteSession(session_id);
+      await deleteSessionAsync(session_id);
       return res.json({
         response: pick(
           `Por nada 😊\n\nSe precisar, é só chamar! 👍`,
@@ -130,19 +130,16 @@ router.post("/", async (req, res) => {
     }
 
     if (session && now - session.lastInteraction > config.sessionTimeout) {
-      deleteSession(session_id);
+      await deleteSessionAsync(session_id);
       session = null;
     }
 
-    // Só reseta se estiver em ask_name ou final (não no meio do atendimento)
-    // Só reseta no step "final" — nunca em "ask_name" (qualquer texto é um nome válido)
     if (session && session.step === "final" && await isNewIntent(msg)) {
-      deleteSession(session_id);
+      await deleteSessionAsync(session_id);
       session = null;
     }
 
     if (!session) {
-      // Se o SAC já conhece o nome (via perfil WhatsApp), pré-popula para pular a pergunta
       const cleanName = contact_name && !/^\+?\d+$/.test(contact_name.trim())
         ? contact_name.split(' ')[0].charAt(0).toUpperCase() + contact_name.split(' ')[0].slice(1).toLowerCase()
         : null;
@@ -174,13 +171,13 @@ router.post("/", async (req, res) => {
     );
 
     if (shouldDelete) {
-      deleteSession(session_id);
+      await deleteSessionAsync(session_id);
       return res.json({ response: reply, ended: true, transfer: isTransfer === true });
     }
 
     if (updatedSession) {
       updatedSession.lastInteraction = Date.now();
-      saveSession(session_id, updatedSession);
+      await saveSessionAsync(session_id, updatedSession);
     }
 
     return res.send(reply);
