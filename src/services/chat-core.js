@@ -715,13 +715,6 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
-      // Suporte humano direto
-      if (contemAlgum(msg, ["suporte","tecnico","técnico","quero ajuda","falar com alguem","falar com alguém","atendente","humano"])) {
-        session.step = "escalation";
-        reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
-        break;
-      }
-
       // Saudação ou mensagem muito curta
       const saudacoesProb = ["oi","ola","olá","hey","hi","bom dia","boa tarde","boa noite","opa","eai","e ai","ok","blz","beleza"];
       if (saudacoesProb.some(s => msg.trim() === s) || msg.trim().length <= 2) {
@@ -786,6 +779,14 @@ export async function processConversation(msg, rawMessage, session, options = {}
           `Lentidão no microterminal geralmente é de rede, ${session.name}! 😊\n\nVamos verificar a configuração 👇\n\nVocê sabe o IP do computador?`,
           `Entendido, ${session.name}! Lentidão pode ser configuração de IP ou problema na rede.\n\nVocê tem o IP do servidor em mãos?`,
         );
+        break;
+      }
+
+      // Suporte humano explícito — apenas quando o cliente pede claramente um atendente
+      // Não incluir "suporte" ou "ajuda" sozinhos — aparecem naturalmente em descrições de problemas
+      if (contemAlgum(msg, ["quero atendente","falar com atendente","falar com alguem","falar com alguém","quero humano","atendente humano","suporte humano","quero um tecnico","preciso de tecnico","preciso de técnico"])) {
+        session.step = "escalation";
+        reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
         break;
       }
 
