@@ -844,6 +844,13 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
+      // "Já te mandei" / "já enviei" — sessão reiniciou, não lembra do IP anterior
+      if (contemAlgum(msg, ["ja mandei","já mandei","ja te mandei","já te mandei","ja enviei","já enviei","ja passei","já passei","mandei antes","enviei antes","ja te falei o ip","já falei o ip","ja disse o ip","já disse o ip"])) {
+        session.step = "teach_ip";
+        reply = `Desculpa, ${session.name || ""}! Minha sessão reiniciou e perdi o histórico 😅\n\nPode me mandar o IP de novo? É aquele número assim: *192.168.x.x* 👍`;
+        break;
+      }
+
       const ipDiretoAsk = extrairIP(msg);
       const seiPositivo = msg.includes("sei") &&
         !msg.includes("sei nada") && !msg.includes("sei la") &&
@@ -868,6 +875,12 @@ export async function processConversation(msg, rawMessage, session, options = {}
     // ── teach_ip ──────────────────────────────────────────────────
     case "teach_ip": {
       const ipTeach = extrairIP(msg);
+
+      // "Já te mandei" — sessão reiniciou
+      if (contemAlgum(msg, ["ja mandei","já mandei","ja te mandei","já te mandei","ja enviei","já enviei","ja passei","já passei","mandei antes","enviei antes"])) {
+        reply = `Desculpa, ${session.name || ""}! Minha sessão reiniciou e perdi o histórico 😅\n\nPode me mandar o IP de novo? É aquele número assim: *192.168.x.x* 👍`;
+        break;
+      }
 
       // Desistência
       if (contemAlgum(msg, ["nao quero mais","não quero mais","desisti","deixa pra la","deixa pra lá","esquece","cancela","para","nao quero","não quero"])) {
