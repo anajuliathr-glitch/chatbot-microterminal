@@ -1025,6 +1025,19 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
+      // Como ligar / ligar o microterminal
+      if (contemAlgum(msg, ["como ligo","como ligar","como eu ligo","ligar ele","ligar o microterminal","ligar novamente","ligar de novo","botao para ligar","botão para ligar","tem botao","tem botão","apertar botao","apertar botão","precisa apertar","como aciona","como liga"])) {
+        reply = (
+          `O microterminal não tem botão de liga/desliga — ele liga automaticamente ao ser plugado na tomada! 😊\n\n` +
+          `Basta:\n` +
+          `1️⃣ Plugar o cabo de energia na tomada\n` +
+          `2️⃣ Aguardar aparecer os *pontinhos na tela*\n` +
+          `3️⃣ Pressionar a tecla *P* assim que os pontinhos aparecerem\n\n` +
+          `_(Deixe o dedo já posicionado no P antes de plugar — a janela é rápida!)_ 👍`
+        );
+        break;
+      }
+
       // Não conseguiu pressionar P a tempo
       if (contemAlgum(msg, ["nao consegui","não consegui","passou rapido","passou rápido","perdi","nao deu tempo","nao apareceu pontinho","não apareceu"])) {
         reply = (
@@ -1142,8 +1155,10 @@ export async function processConversation(msg, rawMessage, session, options = {}
         };
       }
 
-      // Negativo — não funcionou
-      if (await checkNegative(msg)) {
+      // Negativo — não funcionou (ignora perguntas: "não sei como", "não sei o que")
+      const isQuestionNotFailure = (msg.includes("nao sei") || msg.includes("não sei")) &&
+        contemAlgum(msg, ["como","o que","qual","onde","quando","por que","porque","pra que"]);
+      if (!isQuestionNotFailure && await checkNegative(msg)) {
         session.attempts = Math.min((session.attempts || 0) + 1, 99);
 
         if (errorType === "ip") {
