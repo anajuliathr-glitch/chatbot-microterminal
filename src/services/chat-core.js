@@ -1330,8 +1330,14 @@ export async function processConversation(msg, rawMessage, session, options = {}
           session: null,
           shouldDelete: true,
         };
-      } else if (await checkPositive(msg)) {
+      } else if (await checkPositive(msg) || contemAlgum(msg, ["mais uma","outra duvida","outra pergunta","tenho duvida","mais duvida","mais pergunta","sim tenho","tenho sim"])) {
         // Quer ajuda com outra coisa — reinicia mantendo o nome
+        session.step = "ask_problem";
+        session.ip = null;
+        session.attempts = 0;
+        reply = `Claro ${session.name}! 😊 Me conta o que está acontecendo?`;
+      } else if (rawMessage.trim().length > 8 && !msg.startsWith("nao") && !msg.startsWith("não")) {
+        // Mensagem com conteúdo real mas ambígua — rota direto para ask_problem para processar
         session.step = "ask_problem";
         session.ip = null;
         session.attempts = 0;
