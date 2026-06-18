@@ -158,13 +158,13 @@ export async function classificarIntencao(mensagem) {
       system: `Classifique a intencao de uma mensagem enviada para o SAC de uma empresa de software de gestao (ThR Softwares).
 Responda APENAS com uma das palavras abaixo — sem mais nada:
 
-afirmativo   - confirma, concorda, "sim", "foi", "funcionou", "ok", "certo"
+afirmativo   - confirma, concorda, "sim", "foi", "funcionou", "ok", "certo", "deu certo"
 negativo     - nega, "nao", "nao funcionou", "nao deu", "continua igual"
 agradecimento - "obrigado", "valeu", "muito obrigado"
 saudacao     - "oi", "ola", "bom dia", "boa tarde"
 neutro       - informacao sem contexto claro, numero, dado tecnico
 escalacao    - quer falar com humano, atendente, tecnico, pessoa real
-comercial    - pergunta sobre preco, produto, promocao, contrato, evento, vendas, orcamento, quanto custa, tem disponivel, quero comprar, quero adquirir, festa, salao, loja
+comercial    - pergunta sobre preco, produto, promocao, contrato, evento, vendas, orcamento, quanto custa, tem disponivel, quero comprar, quero adquirir, festa, salao, loja, locacao, aluguel, maquininha, tef, valor, como funciona o produto, planos, mensalidade
 problema_rede - terminal nao conecta, tela preta, sem conexao
 problema_ip  - ip errado, nao encontrou ip, nao sabe o ip
 erro_salvamento - nao salvou, nao apareceu menu, nao conseguiu pressionar P

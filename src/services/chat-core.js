@@ -1337,7 +1337,29 @@ export async function processConversation(msg, rawMessage, session, options = {}
         session.attempts = 0;
         reply = `Claro ${session.name}! 😊 Me conta o que está acontecendo?`;
       } else if (rawMessage.trim().length > 8 && !msg.startsWith("nao") && !msg.startsWith("não")) {
-        // Mensagem com conteúdo real mas ambígua — rota direto para ask_problem para processar
+        // Mensagem com conteúdo — classifica e processa já, sem pedir "me conta" de novo
+        const intencaoCD = classificarFn ? await classificarFn(rawMessage) : null;
+        if (intencaoCD === "comercial" || contemAlgum(msg, ["locacao","locação","maquininha","tef","aluguel","preco","preço","valor","quanto custa","qual o valor","qual o preco","caixa eventos","thr food","thr foods","quero comprar","quero contratar","tem disponivel","tem promocao"])) {
+          logEvent({ type: "transfer_comercial", chatId, name: session.name });
+          return {
+            reply: `Essa é uma pergunta para o nosso setor *Comercial* 😊\n\nVou te transferir para um atendente que pode te ajudar!\n\nEm breve alguém do Comercial vai te atender aqui pelo WhatsApp 😊`,
+            session: null,
+            shouldDelete: true,
+            isTransfer: true,
+            transferSector: "Comercial",
+          };
+        }
+        if (intencaoCD === "escalacao") {
+          session.step = "escalation";
+          reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+          break;
+        }
+        const ragCD = await responderComRAG(rawMessage, session.name);
+        if (ragCD) {
+          session.step = "rag_followup";
+          reply = `${ragCD}\n\n---\nIsso ajudou? 😊`;
+          break;
+        }
         session.step = "ask_problem";
         session.ip = null;
         session.attempts = 0;
