@@ -260,6 +260,75 @@ Funcionalidades:
 
 ---
 
+### ThR AgroPet (ThR Agro)
+Sistema completo de gestão para lojas agropecuárias, petshops e estabelecimentos que vendem rações, sementes, medicamentos veterinários e defensivos agrícolas.
+
+Público-alvo:
+- Lojas agropecuárias e petshops
+- Estabelecimentos que trabalham com rações, sementes, medicamentos veterinários e defensivos
+- Empresas com vendas no balcão, crediário ou por pedido
+
+Funcionalidades:
+- Frente de caixa rápida e intuitiva para vendas no balcão
+- Controle de estoque com lotes, validades e unidades de medida personalizadas
+- Monitoramento rigoroso de vencimentos para evitar perda de mercadorias por expiração
+- Emissão de NF-e (Nota Fiscal Eletrônica) e NFC-e (Cupom Fiscal Eletrônico)
+- Gestão financeira completa: contas a pagar/receber, fluxo de caixa, boletos e cheques
+- Atualização em massa de tabelas de preços (precificação em lote)
+- Relatórios gerenciais: vendas, produtos, rentabilidade
+- Cadastro de clientes, fornecedores e produtos com categorias específicas (rações, sementes, etc.)
+- Controle de compras, devoluções e trocas
+- Emissão e controle de boletos e cheques
+- Gestão de inadimplência e crediário
+
+Benefícios principais:
+- Controle rigoroso de perdas por expiração de produtos
+- Eliminação de erros de precificação
+- Visualização do lucro real em tempo real
+- Monitoramento de inadimplência
+- Operação integrada do estoque ao caixa
+
+Segmentos atendidos: lojas de ração, produtos veterinários, sementes, defensivos e agropecuárias em geral.
+
+---
+
+### Caixa Eventos (ThR Caixa Eventos)
+Sistema completo de gestão de vendas para eventos, feiras, festivais, bares, restaurantes e estabelecimentos que trabalham com fichas ou comandas.
+
+Público-alvo:
+- Organizadores de eventos e festivais
+- Feiras e eventos comerciais
+- Bares e restaurantes em eventos
+- Salões de festas e espaços para eventos
+- Estabelecimentos de qualquer porte que operam com fichas ou comandas
+
+Funcionalidades:
+- Venda rápida de fichas e vouchers via SmartPOS
+- Registro preciso de consumos por item
+- Fechamento de caixa simplificado em minutos
+- Múltiplas formas de pagamento: cartão, Pix, dinheiro e sistema de comanda
+- Controle de comanda (pré-paga e pós-paga)
+- Monitoramento de vendas em tempo real durante o evento
+- Relatórios e indicadores em tempo real
+- Emissão de notas fiscais eletrônicas (NF-e/NFC-e)
+- Controle de estoque integrado
+- Gestão financeira e fluxo de caixa
+- Integração com sistemas de inventário e controle financeiro
+
+Benefícios:
+- Elimina fichas físicas manuais e planilhas
+- Agilidade no atendimento e nas vendas
+- Fechamento de caixa sem complicações
+- Acesso aos dados de vendas em tempo real
+- Interface intuitiva e fácil de usar
+- Redução de erros operacionais e administrativos
+
+Casos de uso típicos: festas em salão, eventos corporativos, feiras gastronômicas, shows, festivais, eventos de clube, festas escolares.
+
+Para saber mais ou solicitar orçamento sobre Caixa Eventos: entrar em contato pelo setor Comercial da ThR — (15) 3283-3516 ou pelo site thrsoftwares.com.br.
+
+---
+
 ### ThR Venda Direta
 Software de gestão para empresas de Vendas Diretas de produtos via catálogos. Referência de mercado para otimizar todo o processo, desde a entrada de pedidos até a entrega e recebimento.
 
@@ -353,4 +422,25 @@ P: Qual sistema é indicado para rede de franquias?
 R: O ThR Franquias, desenvolvido especialmente para gestão de redes de franquias com controle centralizado dos franqueados.
 
 P: O ThR emite nota fiscal eletrônica?
-R: Sim. Vários sistemas ThR emitem NF-e (ThR Loja, ThR Foods, ThR Parques, ThR Venda Direta). Há também o ThR NFe, dedicado exclusivamente à emissão de NF-e.
+R: Sim. Vários sistemas ThR emitem NF-e (ThR Loja, ThR Foods, ThR Parques, ThR Venda Direta, ThR AgroPet, Caixa Eventos). Há também o ThR NFe, dedicado exclusivamente à emissão de NF-e.
+
+P: Qual sistema é indicado para loja agropecuária ou petshop?
+R: O ThR AgroPet (ThR Agro) é o sistema completo para lojas agropecuárias e petshops. Inclui controle de validade de produtos, estoque por lote, frente de caixa, emissão fiscal e financeiro completo.
+
+P: O que é o Caixa Eventos?
+R: Caixa Eventos é o sistema da ThR para gestão de vendas em eventos, feiras e estabelecimentos que trabalham com fichas ou comandas. Permite vender fichas, registrar consumos, fechar caixa rapidamente e acompanhar as vendas em tempo real. Aceita cartão, Pix, dinheiro e sistema de comanda.
+
+P: O Caixa Eventos funciona para festas em salão?
+R: Sim. O Caixa Eventos é ideal para festas em salão, eventos corporativos, feiras gastronômicas, shows, festivais e qualquer evento que use fichas ou comandas. Para contratar ou saber o valor, entrar em contato com o setor Comercial: (15) 3283-3516 ou pelo site thrsoftwares.com.br.
+
+P: Quanto custa o Caixa Eventos / ThR AgroPet?
+R: Valores e planos são personalizados conforme o porte e necessidades do cliente. Para solicitar orçamento, entrar em contato com o setor Comercial da ThR pelo (15) 3283-3516 ou pelo site thrsoftwares.com.br.
+
+P: Quais são os produtos da ThR Softwares?
+R: A ThR oferece os seguintes sistemas: ThR Franquias, ThR Parques, ThR Foods, ThR NFe, ThR Loja, ThR AgroPet (Agro), Caixa Eventos, ThR Venda Direta, ThR Locação Equipamentos e ThR Locação Caçambas.
+
+P: Qual sistema é indicado para parque, clube ou centro de lazer?
+R: O ThR Parques é o sistema completo para parques de diversão, parques aquáticos, clubes e centros de lazer. Integra bilheteria, controle de acesso com catraca, comandas, estoque e financeiro.
+
+P: Qual sistema é indicado para emissão de notas fiscais somente?
+R: O ThR NFe é o sistema dedicado exclusivamente à emissão de Nota Fiscal Eletrônica, com integração total com a SEFAZ, emissão de DANFE e XML.
