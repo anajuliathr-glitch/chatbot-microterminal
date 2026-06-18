@@ -1,5 +1,5 @@
 import { responderComRAG } from "./ai.js";
-import { getSession, saveSession, deleteSession } from "./session.js";
+import { getSessionAsync, saveSessionAsync, deleteSessionAsync } from "./session.js";
 import { log } from "./logger.js";
 import { notificarSuporte } from "./zapi.js";
 import { notificarSuporteMeta } from "./meta.js";
@@ -19,12 +19,12 @@ const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 900_
 export async function processMessage(message, chatId, from) {
   log(`[WhatsApp] [${from}] ${message}`);
 
-  let session = getSession(chatId);
+  let session = await getSessionAsync(chatId);
   const now = Date.now();
 
   if (session && now - session.lastInteraction > SESSION_TIMEOUT) {
     console.log(`⏰ Sessão expirada para ${from}`);
-    deleteSession(chatId);
+    await deleteSessionAsync(chatId);
     session = null;
   }
 
@@ -41,7 +41,7 @@ export async function processMessage(message, chatId, from) {
     if (isNew) {
       session.step = "ask_name";
       session.lastInteraction = now;
-      saveSession(chatId, session);
+      await saveSessionAsync(chatId, session);
       return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nQual seu nome?`;
     }
     return null;
@@ -49,7 +49,7 @@ export async function processMessage(message, chatId, from) {
 
   // ── Comandos globais ─────────────────────────────────────────────
   if (msg === "reset") {
-    deleteSession(chatId);
+    await deleteSessionAsync(chatId);
     return "Memória resetada 🔄\n\nPode começar de novo quando quiser 😊";
   }
 
@@ -59,7 +59,7 @@ export async function processMessage(message, chatId, from) {
     "flw","falou","vlw","abraco","abraços","ateee","ate+","até+",
   ])) {
     if (!session) return null; // sessão já encerrada — não responde de novo
-    deleteSession(chatId);
+    await deleteSessionAsync(chatId);
     return pick(
       "Por nada! 😊\n\nQualquer coisa, é só chamar! 👍",
       "Disponha! 😄\n\nQualquer coisa, é só chamar 👍",
@@ -79,7 +79,7 @@ export async function processMessage(message, chatId, from) {
     session.step = "ask_name_then_problem";
     session.pendingProblem = message;
     session.lastInteraction = now;
-    saveSession(chatId, session);
+    await saveSessionAsync(chatId, session);
     return `Oi! 😊 Sou a assistente do microterminal da ThR.\n\nEntendi que você está com um problema — me diz seu nome que já te ajudo! 👍`;
   }
 
@@ -91,7 +91,7 @@ export async function processMessage(message, chatId, from) {
     session.pendingProblem = null;
     session.step = "ask_problem";
     session.lastInteraction = now;
-    saveSession(chatId, session);
+    await saveSessionAsync(chatId, session);
     return processMessage(problema, chatId, from);
   }
 
@@ -113,10 +113,10 @@ export async function processMessage(message, chatId, from) {
   );
 
   if (shouldDelete) {
-    deleteSession(chatId);
+    await deleteSessionAsync(chatId);
   } else {
     updatedSession.lastInteraction = Date.now();
-    saveSession(chatId, updatedSession);
+    await saveSessionAsync(chatId, updatedSession);
   }
 
   return reply;
