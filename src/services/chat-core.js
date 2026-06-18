@@ -790,9 +790,37 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
+      // Tenta RAG primeiro — pode responder perguntas sobre produtos, promoções, documentação
+      {
+        const ragResposta = await responderComRAG(rawMessage, session.name);
+        if (ragResposta) {
+          session.step = "rag_followup";
+          reply = `${ragResposta}\n\n---\nIsso ajudou? 😊`;
+          break;
+        }
+      }
+
+      // Pergunta comercial/produto — não tem nada a ver com suporte técnico, redireciona para Comercial
+      if (contemAlgum(msg, [
+        "promocao","promoção","preco","preço","valor","orcamento","orçamento",
+        "comprar","adquirir","produto","produtos","caixa eventos","the rock",
+        "thr food","thr foods","festa","salao","salão","evento","eventos",
+        "contrato","plano","assinar","quero contratar","quero adquirir",
+        "quero comprar","quanto custa","qual o valor","tem disponivel",
+        "esta disponivel","está disponível","qual o preco","qual o preço",
+        "tem promocao","tem promoção","voces vendem","vocês vendem",
+      ])) {
+        logEvent({ type: "transfer_comercial", chatId, name: session.name });
+        return {
+          reply: `Essa é uma pergunta para o nosso setor *Comercial* 😊\n\nVou te transferir para um atendente que pode te ajudar com informações sobre produtos e promoções!\n\nEm breve alguém do Comercial vai te atender aqui pelo WhatsApp 😊`,
+          session: null,
+          shouldDelete: true,
+          isTransfer: true,
+          transferSector: "Comercial",
+        };
+      }
+
       // Qualquer outro problema descrito → vai para ask_ip
-      // O IP é o ponto de partida para resolver 90%+ dos problemas do microterminal.
-      // Não usar RAG aqui para não gerar resposta genérica fora do fluxo.
       session.step = "ask_ip";
       reply = pick(
         `Entendi, vamos resolver isso 👍\n\nPrimeiro preciso do IP do computador servidor.\n\nVocê sabe o IP?`,
