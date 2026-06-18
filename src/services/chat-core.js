@@ -1154,17 +1154,18 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
-      // Afirmativo — funcionou → resolve direto, sem pedir confirmação extra
+      // Afirmativo — funcionou → pergunta se precisa de mais alguma coisa antes de fechar
       if (await checkPositive(msg)) {
         logEvent({ type: "resolved", chatId, name: session.name, ip: session.ip });
+        session.step = "confirm_done";
         return {
           reply: pick(
-            `Boa ${session.name}! 🎉 Já está tudo funcionando!\n\nQualquer coisa, é só chamar 😄`,
-            `Boa ${session.name}! 🙌 Fico feliz que deu certo!\n\nEstou aqui se precisar 😊`,
-            `Perfeito ${session.name}! ✅ Problema resolvido!\n\nQualquer dúvida, é só me chamar 👍`,
+            `Boa ${session.name}! 🎉 Fico feliz que deu certo!\n\nPosso te ajudar com mais alguma coisa? 😊`,
+            `Que ótimo, ${session.name}! 🙌 Resolvemos!\n\nTem mais alguma dúvida ou posso encerrar seu atendimento? 😊`,
+            `Perfeito, ${session.name}! ✅ Tudo funcionando!\n\nPosso ajudar com mais alguma coisa antes de fecharmos? 😊`,
           ),
-          session: null,
-          shouldDelete: true,
+          session,
+          shouldDelete: false,
         };
       }
 
@@ -1281,20 +1282,28 @@ export async function processConversation(msg, rawMessage, session, options = {}
     }
 
     // ── confirm_done ──────────────────────────────────────────────
+    // Chegamos aqui após o problema ser resolvido — perguntamos se precisa de mais ajuda
     case "confirm_done": {
-      if (await checkPositive(msg)) {
-        logEvent({ type: "resolved", chatId, name: session.name, ip: session.ip });
-        session.step = "final";
-        reply = pick(
-          `Boa ${session.name}! 🎉\n\nFuncionou 😄\n\nQualquer coisa, chama 👍`,
-          `Boa ${session.name}! 🙌\n\nFico feliz que deu certo!\n\nEstou aqui se precisar, é só chamar 😊`,
-          `Boa ${session.name}! 🎊\n\nJá está tudo funcionando!\n\nQualquer coisa, é só chamar 😄`,
-        );
-      } else if (await checkNegative(msg)) {
-        session.step = "config_terminal";
-        reply = `Beleza, então vamos continuar 👇\n\nO que ainda está acontecendo?`;
+      if (await checkNegative(msg)) {
+        // Não precisa de mais nada — encerra
+        logEvent({ type: "closed", chatId, name: session.name });
+        return {
+          reply: pick(
+            `Boa ${session.name}! 🎉 Se precisar de qualquer coisa, é só chamar 👍`,
+            `Certo ${session.name}! 😊 Estou sempre por aqui, é só chamar 👍`,
+            `Perfeito ${session.name}! ✅ Até mais e qualquer dúvida, é só me chamar 😄`,
+          ),
+          session: null,
+          shouldDelete: true,
+        };
+      } else if (await checkPositive(msg)) {
+        // Quer ajuda com outra coisa — reinicia mantendo o nome
+        session.step = "ask_problem";
+        session.ip = null;
+        session.attempts = 0;
+        reply = `Claro ${session.name}! 😊 Me conta o que está acontecendo?`;
       } else {
-        reply = `Está funcionando agora ou ainda não?`;
+        reply = `Posso te ajudar com mais alguma coisa? 😊\n\nResponde *sim* se tiver outra dúvida ou *não* para encerrarmos 👍`;
       }
       break;
     }
