@@ -1339,7 +1339,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
       } else if (rawMessage.trim().length > 8 && !msg.startsWith("nao") && !msg.startsWith("não")) {
         // Mensagem com conteúdo — classifica e processa já, sem pedir "me conta" de novo
         const intencaoCD = classificarFn ? await classificarFn(rawMessage) : null;
-        if (intencaoCD === "comercial" || contemAlgum(msg, ["locacao","locação","maquininha","tef","aluguel","preco","preço","valor","quanto custa","qual o valor","qual o preco","caixa eventos","thr food","thr foods","quero comprar","quero contratar","tem disponivel","tem promocao"])) {
+        if (intencaoCD === "comercial" || contemAlgum(msg, ["locacao","locação","maquininha","tef","aluguel","preco","preço","valor","quanto custa","qual o valor","qual o preco","caixa eventos","thr food","thr foods","quero comprar","quero contratar","tem disponivel","tem promocao","franquia","royalties","franqueado","agropecuaria","agropet","petshop","racao","ração","sementes","defensivos","medicamento veterinario","parque aquatico","bilheteria","catraca","ingressos","restaurante","lanchonete","delivery","ifood","rappi","pizzaria","hamburguer","padaria","sistema novo","novo sistema","quero implantar","demonstracao","demonstração"])) {
           logEvent({ type: "transfer_comercial", chatId, name: session.name });
           return {
             reply: `Essa é uma pergunta para o nosso setor *Comercial* 😊\n\nVou te transferir para um atendente que pode te ajudar!\n\nEm breve alguém do Comercial vai te atender aqui pelo WhatsApp 😊`,

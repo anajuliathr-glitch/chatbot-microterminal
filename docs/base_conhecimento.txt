@@ -444,3 +444,95 @@ R: O ThR Parques é o sistema completo para parques de diversão, parques aquát
 
 P: Qual sistema é indicado para emissão de notas fiscais somente?
 R: O ThR NFe é o sistema dedicado exclusivamente à emissão de Nota Fiscal Eletrônica, com integração total com a SEFAZ, emissão de DANFE e XML.
+
+P: O ThR Softwares atende restaurantes e bares?
+R: Sim. O ThR Foods é o sistema completo para estabelecimentos de alimentação, incluindo restaurantes, bares, lanchonetes, docerias e padarias. Inclui comanda mobile, delivery e gestão de produção. Para contratar, falar com o Comercial: (15) 3283-3516.
+
+P: Vocês têm integração com iFood ou Rappi?
+R: Sim, o ThR Foods integra com plataformas de delivery como iFood e Rappi. Para detalhes e planos, entrar em contato com o setor Comercial: (15) 3283-3516.
+
+P: Preciso controlar royalties dos meus franqueados. A ThR tem sistema para isso?
+R: Sim. O ThR Franquias é desenvolvido especialmente para redes com controle automático de royalties, fundo de propaganda (FPP/FAF) e gestão centralizada de todas as unidades franqueadas.
+
+P: Tenho um parque de diversão ou clube. Qual sistema vocês oferecem?
+R: O ThR Parques é o sistema indicado. Inclui bilheteria, controle de acesso com catraca, passaportes, comandas pré e pós-pagas, estoque e financeiro completo.
+
+P: A ThR tem sistema para locação de equipamentos?
+R: Sim. O ThR Locação Equipamentos atende empresas locadoras de equipamentos de grande porte, com controle de contratos, manutenção, estoque e financeiro.
+
+P: Onde fica a ThR Softwares?
+R: A ThR Softwares fica em Sorocaba, SP. O suporte é feito remotamente por WhatsApp e telefone: (15) 3283-3516 e (15) 3283-1009.
+
+P: Quais formas de pagamento os sistemas ThR integram?
+R: Os sistemas ThR integram com PagSeguro, Bin, Sicredi, Stone e Cielo. Também suportam Pix, cartão de crédito e débito via TEF, e dinheiro.
+
+---
+
+## ThR FRANQUIAS — DETALHES DO SISTEMA
+
+Público-alvo: franqueadores com redes de franquias e múltiplas unidades.
+
+Funcionalidades:
+- Controle centralizado de todas as unidades da rede
+- Gestão automática de royalties e fundo de propaganda (FPP/FAF)
+- Cadastro de franqueados, franqueador e unidades
+- Ranking de desempenho entre lojas da rede
+- Padronização de processos e produtos da rede
+- Relatórios consolidados por unidade, região ou rede completa
+- Financeiro: contas a receber, boletos, fluxo de caixa
+- Estoque integrado entre unidades
+- Emissão de Nota Fiscal Eletrônica (NF-e)
+
+Termos relacionados: franqueado, franqueador, royalties, rede franqueada, unidades, matriz, fundo de propaganda, padronização, ranking de lojas, FPP, FAF, taxa de franquia, expansão de franquia, abertura de unidade
+
+---
+
+## ThR PARQUES — DETALHES DO SISTEMA
+
+Público-alvo: parques de diversão, parques aquáticos, clubes, centros de lazer, boliches, ambientes com controle de acesso.
+
+Funcionalidades:
+- Bilheteria integrada com controle de acesso (catraca/torniquete)
+- Tipos de ingresso: passaporte, comanda pré-paga, comanda pós-paga
+- Controle de acesso por QR Code ou cartão RFID
+- Gestão de comandas e consumos internos
+- Estoque de produtos (bar, loja de souvenirs)
+- Financeiro completo com fechamento de caixa
+- Relatórios de visitantes e faturamento por período
+
+Termos relacionados: bilheteria, catraca, torniquete, passaporte, comanda pré-paga, comanda pós-paga, QR Code, RFID, parque aquático, clube, boliche, centro de lazer, ingressos, controle de acesso, visitantes, área de lazer
+
+---
+
+## ThR FOODS — DETALHES DO SISTEMA
+
+Público-alvo: restaurantes, bares, lanchonetes, docerias, padarias, dark kitchens, hamburguerias, pizzarias, estabelecimentos de alimentação em geral.
+
+Funcionalidades:
+- Controle de pedidos por balcão, mesa e delivery
+- Comanda mobile (garçom opera por tablet ou celular)
+- Integração com iFood, Rappi e outros apps de delivery
+- Gestão de produção (cozinha, chapa, bar)
+- Controle de estoque de insumos e ingredientes
+- Emissão de NF-e e NFC-e
+- Fechamento de caixa por turno
+- Encomendas e gestão de eventos gastronômicos
+- Controle de mesas e reservas
+
+Termos relacionados: comanda, delivery, cardápio, mesa, pedido, iFood, Rappi, cozinha, chapa, garçom, dark kitchen, lanchonete, padaria, doceria, bistrô, hamburgeria, pizzaria, churrascaria, gestão de produção, encomenda, self-service, bar, restaurante
+
+---
+
+## GLOSSÁRIO GERAL THR — PALAVRAS-CHAVE POR ÁREA
+
+Integração de pagamentos: PagSeguro, Bin, Sicredi, Stone, Cielo, POS, maquininha, TEF, integração bancária, Pix, QR Code de pagamento
+
+Fiscal: NF-e, NFC-e, SAT, MFE, SEFAZ, DANFE, XML, tributação, Simples Nacional, MEI, ICMS, ISS
+
+Gestão financeira: contas a receber, contas a pagar, boleto bancário, remessa, retorno, baixa, fluxo de caixa, DRE, inadimplência, crediário, carnê, juros, desconto, capital de giro
+
+Estoque e logística: entrada de mercadoria, saída, lote, validade, inventário, reposição automática, ponto de pedido, curva ABC, fornecedor, código de barras, leitor óptico, balança integrada
+
+Varejo e PDV: frente de caixa, PDV, operador de caixa, sangria, suprimento, fechamento de caixa, cupom, troca, devolução, promoção, lista de preços, tabela de preços
+
+Clientes e CRM: cadastro de clientes, fidelização, programa de pontos, histórico de compras, aniversariante, mailing, inadimplente, limite de crédito

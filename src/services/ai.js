@@ -164,7 +164,7 @@ agradecimento - "obrigado", "valeu", "muito obrigado"
 saudacao     - "oi", "ola", "bom dia", "boa tarde"
 neutro       - informacao sem contexto claro, numero, dado tecnico
 escalacao    - quer falar com humano, atendente, tecnico, pessoa real
-comercial    - pergunta sobre preco, produto, promocao, contrato, evento, vendas, orcamento, quanto custa, tem disponivel, quero comprar, quero adquirir, festa, salao, loja, locacao, aluguel, maquininha, tef, valor, como funciona o produto, planos, mensalidade
+comercial    - pergunta sobre preco, produto, promocao, contrato, evento, vendas, orcamento, quanto custa, tem disponivel, quero comprar, quero adquirir, quero contratar, quero implantar, festa, salao, loja, locacao, aluguel, maquininha, tef, valor, como funciona o produto, planos, mensalidade, demonstracao, demo, franquia, royalties, franqueado, agropecuaria, agropet, petshop, racao, sementes, medicamentos veterinarios, defensivos, parque, bilheteria, catraca, ingressos, restaurante, bar, lanchonete, delivery, ifood, rappi, comanda mobile, pizzaria, hamburguer, padaria, sistema novo, novo sistema
 problema_rede - terminal nao conecta, tela preta, sem conexao
 problema_ip  - ip errado, nao encontrou ip, nao sabe o ip
 erro_salvamento - nao salvou, nao apareceu menu, nao conseguiu pressionar P
