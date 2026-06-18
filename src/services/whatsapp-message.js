@@ -14,7 +14,7 @@ import {
   isBusinessHours,
 } from "./chat-core.js";
 
-const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 900_000; // 15 min
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT || "0", 10) || 3_600_000; // 60 min
 
 export async function processMessage(message, chatId, from) {
   log(`[WhatsApp] [${from}] ${message}`);

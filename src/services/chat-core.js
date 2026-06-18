@@ -784,7 +784,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
 
       // Suporte humano explícito — apenas quando o cliente pede claramente um atendente
       // Não incluir "suporte" ou "ajuda" sozinhos — aparecem naturalmente em descrições de problemas
-      if (contemAlgum(msg, ["quero atendente","falar com atendente","falar com alguem","falar com alguém","quero humano","atendente humano","suporte humano","quero um tecnico","preciso de tecnico","preciso de técnico"])) {
+      if (contemAlgum(msg, ["quero atendente","falar com atendente","falar com alguem","falar com alguém","quero humano","atendente humano","suporte humano","quero um tecnico","preciso de tecnico","preciso de técnico","passa para","me passa","passar para","me transfere","falar com o comercial","falar com comercial","falar com vendas","quero falar com"])) {
         session.step = "escalation";
         reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
         break;
