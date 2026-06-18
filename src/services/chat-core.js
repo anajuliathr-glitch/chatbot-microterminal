@@ -489,11 +489,14 @@ export function isManualAffirmative(msg) {
   if (/\bfoi$/.test(msg.trim()) || /\bdeu$/.test(msg.trim())) return true;
   const parciais = [
     "agora foi","agora deu","deu certo","foi sim",
+    "foi agora","deu agora","foi dessa","foi dessa vez",
     "funcionou","resolveu","resolvido","consegui","conectou",
     "ta funcionando","tá funcionando","ta ok","tá ok",
     "tudo certo","tudo ok","ja foi","já foi",
     "funcionando agora","conectado","deu sim","sim deu",
     "deu boa","foi isso","agora sim","ahhh agora","ahh agora",
+    "ahhh foi","ahh foi","ah foi","aaah foi","ahhhh foi",
+    "aiii foi","eita foi","eita deu","uhu","urrray","aeee",
     "agora conectou","ja conectou","já conectou","respondeu",
     "deu ja","deu já","ja deu","já deu","deu sim","sim deu",
     "foi la","foi lá","era isso","foi isso","era so","era só",
