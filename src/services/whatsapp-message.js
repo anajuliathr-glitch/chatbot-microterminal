@@ -1,4 +1,14 @@
-import { responderComRAG } from "./ai.js";
+import { responderComRAG, classificarIntencao } from "./ai.js";
+
+const CLS_CACHE = new Map();
+const CLS_TTL = 60_000;
+async function classificar(msg) {
+  const cached = CLS_CACHE.get(msg);
+  if (cached && Date.now() - cached.ts < CLS_TTL) return cached.result;
+  const result = await classificarIntencao(msg);
+  if (result) CLS_CACHE.set(msg, { result, ts: Date.now() });
+  return result;
+}
 import { getSessionAsync, saveSessionAsync, deleteSessionAsync } from "./session.js";
 import { log } from "./logger.js";
 import { notificarSuporte } from "./zapi.js";
@@ -109,7 +119,7 @@ export async function processMessage(message, chatId, from) {
     msg,
     message,
     session,
-    { responderComRAG, notificar, chatId },
+    { responderComRAG, notificar, classificarFn: classificar, chatId },
   );
 
   if (shouldDelete) {

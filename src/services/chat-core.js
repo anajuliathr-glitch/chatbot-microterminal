@@ -583,6 +583,7 @@ export async function processConversation(msg, rawMessage, session, options = {}
     notificar = async () => {},
     isAffirmativeFn = null,
     isNegativeFn = null,
+    classificarFn = null,
     chatId = null,
     imageAnalysis = false,
   } = options;
@@ -790,34 +791,36 @@ export async function processConversation(msg, rawMessage, session, options = {}
         break;
       }
 
-      // Tenta RAG primeiro — pode responder perguntas sobre produtos, promoções, documentação
+      // IA classifica a intenção antes de qualquer fallback de keyword
       {
+        const intencaoIA = classificarFn ? await classificarFn(rawMessage) : null;
+
+        // Comercial detectado pela IA → transfere direto, sem fluxo técnico
+        if (intencaoIA === "comercial" || contemAlgum(msg, ["caixa eventos","thr food","thr foods","quero comprar","quero adquirir","quero contratar","voces vendem","vocês vendem","tem disponivel","qual o preco","qual o preço","quanto custa","tem promocao"])) {
+          logEvent({ type: "transfer_comercial", chatId, name: session.name });
+          return {
+            reply: `Essa é uma pergunta para o nosso setor *Comercial* 😊\n\nVou te transferir para um atendente que pode te ajudar com informações sobre produtos e promoções!\n\nEm breve alguém do Comercial vai te atender aqui pelo WhatsApp 😊`,
+            session: null,
+            shouldDelete: true,
+            isTransfer: true,
+            transferSector: "Comercial",
+          };
+        }
+
+        // Escalação detectada pela IA
+        if (intencaoIA === "escalacao") {
+          session.step = "escalation";
+          reply = `Claro! Posso te colocar na fila de *suporte humano* da ThR — um técnico entra em contato aqui pelo WhatsApp ou por ligação 👨‍🔧\n\nQuer isso? Responde *sim* ou *não*`;
+          break;
+        }
+
+        // Tenta RAG — responde perguntas sobre documentação, produtos, processos
         const ragResposta = await responderComRAG(rawMessage, session.name);
         if (ragResposta) {
           session.step = "rag_followup";
           reply = `${ragResposta}\n\n---\nIsso ajudou? 😊`;
           break;
         }
-      }
-
-      // Pergunta comercial/produto — não tem nada a ver com suporte técnico, redireciona para Comercial
-      if (contemAlgum(msg, [
-        "promocao","promoção","preco","preço","valor","orcamento","orçamento",
-        "comprar","adquirir","produto","produtos","caixa eventos","the rock",
-        "thr food","thr foods","festa","salao","salão","evento","eventos",
-        "contrato","plano","assinar","quero contratar","quero adquirir",
-        "quero comprar","quanto custa","qual o valor","tem disponivel",
-        "esta disponivel","está disponível","qual o preco","qual o preço",
-        "tem promocao","tem promoção","voces vendem","vocês vendem",
-      ])) {
-        logEvent({ type: "transfer_comercial", chatId, name: session.name });
-        return {
-          reply: `Essa é uma pergunta para o nosso setor *Comercial* 😊\n\nVou te transferir para um atendente que pode te ajudar com informações sobre produtos e promoções!\n\nEm breve alguém do Comercial vai te atender aqui pelo WhatsApp 😊`,
-          session: null,
-          shouldDelete: true,
-          isTransfer: true,
-          transferSector: "Comercial",
-        };
       }
 
       // Qualquer outro problema descrito → vai para ask_ip

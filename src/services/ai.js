@@ -154,13 +154,26 @@ export async function classificarIntencao(mensagem) {
   if (!isIAConfigured()) return null;
   try {
     const text = await callIA({
-      // Modelo menor e mais rápido para classificação
       model: useOpenRouter ? "openai/gpt-oss-20b:free" : undefined,
-      system: "Classifique a intenção em português. Responda APENAS com uma das palavras: saudacao, afirmativo, negativo, neutro, agradecimento, problema_rede, problema_ip, reset, erro_salvamento, outro",
+      system: `Classifique a intencao de uma mensagem enviada para o SAC de uma empresa de software de gestao (ThR Softwares).
+Responda APENAS com uma das palavras abaixo — sem mais nada:
+
+afirmativo   - confirma, concorda, "sim", "foi", "funcionou", "ok", "certo"
+negativo     - nega, "nao", "nao funcionou", "nao deu", "continua igual"
+agradecimento - "obrigado", "valeu", "muito obrigado"
+saudacao     - "oi", "ola", "bom dia", "boa tarde"
+neutro       - informacao sem contexto claro, numero, dado tecnico
+escalacao    - quer falar com humano, atendente, tecnico, pessoa real
+comercial    - pergunta sobre preco, produto, promocao, contrato, evento, vendas, orcamento, quanto custa, tem disponivel, quero comprar, quero adquirir, festa, salao, loja
+problema_rede - terminal nao conecta, tela preta, sem conexao
+problema_ip  - ip errado, nao encontrou ip, nao sabe o ip
+erro_salvamento - nao salvou, nao apareceu menu, nao conseguiu pressionar P
+tecnico      - qualquer outro problema tecnico com microterminal, caixa, impressora, sistema
+outro        - nao se encaixa em nenhuma categoria acima`,
       userContent: mensagem,
       max_tokens: 20,
     });
-    return text.trim().toLowerCase().split(/\s+/)[0]; // só a primeira palavra
+    return text.trim().toLowerCase().split(/\s+/)[0];
   } catch (e) {
     return null;
   }
